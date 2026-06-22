@@ -69,3 +69,86 @@ src/
 └── finance/                 # Enterprise Fiscal Control Domain
     └── ledgers/             # Multi-currency automated partner commission computation metrics
 ```
+
+## 🗺️ High-Level Project Development Roadmap
+
+### Milestone 1: System Foundation & Authentication Architecture
+
+- Establishment of core infrastructure, strict compiler rules, and global `PrismaModule` hooks linking to NeonDB.
+- Implementation of custom corporate invitation onboarding workflows and device fingerprint mapping handlers.
+
+### Milestone 2: HR Accountability & Branch Guardrails
+
+- Development of real-time geofenced clock-in validation layers using latitude/longitude matrix checks.
+- Device idle timeouts triggering automated token revoking, and strict shift-boundary blocking rules for daily report enforcement.
+
+### Milestone 3: B2C Intake & Interaction Matrix
+
+- Rules-based routing maps handling automatic channel assignment based on student preferences and location matrices.
+- In-app WebRTC communication handshakes, silent local voice-recording generation uploads, and integrated Google Meet timeline scheduling hooks.
+
+### Milestone 4: Admission Workflows & Compliance Vault
+
+- Multi-state progression tracks controlled via role-based security blocks.
+- Secure document file stream handling with deep multi-stage approval loops enforcing strict database pipeline freezes.
+
+### Milestone 5: B2B Partner Relationship Management (PRM)
+
+- B2B organizational graphs mapping tracking for schools, sub-agents, and corporate referral partners across specific regional boundaries.
+- Isolated multi-tenant portal APIs allowing self-serve access, complete with a fully secure multi-currency commission calculation matrix.
+
+### Milestone 6: Catalog Systems & Management Analytics
+
+- High-performance parsing modules handling mass imports of global academic course catalogs.
+- Executive dashboard data compile engines parsing bottleneck delay vectors, counsellor closures, and regional recruitment conversion rates.
+
+---
+
+## 🛠️ Installation & Setup
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone [https://github.com/your-organization/ronald-erp-backend.git](https://github.com/your-organization/ronald-erp-backend.git)
+   cd ronald-erp-backend
+   ```
+
+2. **Install system dependencies:**
+
+```bash
+npm install
+```
+
+3.  **Configure Local Environment variables:**
+
+- Create a .env file in the root directory and add your connection variables (refer to development credentials documentation for structure):
+
+```bash
+DATABASE_URL="postgresql://user:password@neondb-cluster/db?sslmode=require"
+```
+
+4. **Initialize Prisma schema configurations:**
+
+```bash
+npx prisma generate
+```
+
+5. **Run the local development server:**
+
+```bash
+npm run start:dev
+```
+
+## 🧪 Testing and API Documentation
+
+- All development modules are mirrored on an internal automated testing grid. For live validation, run:
+
+```bash
+# Unit tests
+npm run test
+
+# End-to-end tests
+npm run test:e2e
+```
+
+- API endpoints are systematically documented inside a centralized team Postman Collection updating dynamically on every milestone completion pass.
