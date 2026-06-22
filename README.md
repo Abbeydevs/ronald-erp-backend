@@ -1,98 +1,71 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Ronald Partners Consult ERP - Backend Core
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+An enterprise-grade, highly secure Management and Admissions ERP backend designed for **Ronald Partners Consult**. This system operates on a unified relational data model supporting two distinct business pipelines: a **B2C Student Recruitment Framework** and a **B2B Partner Relationship Management (PRM) Network**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Built entirely using a modular, decoupled architecture following strict industry best practices.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🚀 Strategic Engineering Principles
 
-## Project setup
+To ensure zero technical debt, absolute maintainability, and enterprise reliability, this repository strictly adheres to the following development mandates:
 
-```bash
-$ npm install
+1. **Absolute Type Safety:** `any` types are completely banned across the entire codebase. The TypeScript compiler runs in maximum strict mode (`strict: true`, `noImplicitAny: true`).
+2. **Modular Domain Separation:** Every business feature must live inside its own isolated NestJS module domain. Cross-module communication is strictly limited to exported public services.
+3. **CLI-Driven Operations:** All modules, services, controllers, and resources must be generated natively using the NestJS CLI to ensure consistent architecture and zero configuration layout drifting.
+4. **Zero Structural Debt:** Features must be built sequentially to full completion (Database schema -> Service logic -> Controller API -> End-to-end UAT validation) before initiating the next phase.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Framework:** NestJS (Progressive Node.js framework)
+- **Language:** TypeScript (Strictly typed)
+- **ORM:** Prisma 6 (Type-safe database abstraction)
+- **Database Engine:** PostgreSQL (Hosted via serverless NeonDB infrastructure)
+- **Deployment/Hosting:** Render Container Clouds
+
+---
+
+## 📂 System Architecture Overview
+
+The backend uses a modular decoupled domain architecture. The structural flow separates core concerns as follows:
+
+```text
+src/
+├── app.module.ts            # Core application entry combining root configuration layers
+├── main.ts                  # NestJS application bootstrap entry point
+│
+├── prisma/                  # Global Global Database Module
+│   ├── prisma.module.ts     # Global export wrapper for PrismaClient instances
+│   └── prisma.service.ts    # Connection lifecycle management (NeonDB pooling configuration)
+│
+├── auth/                    # Core Authentication Domain
+│   ├── strategies/          # Secure Passport.js strategies
+│   ├── guards/              # Custom RBAC & security enforcement interceptors
+│   └── tables/              # Secure hardware device fingerprint tracking tables
+│
+├── hr/                      # Internal Staff Accountability Domain
+│   ├── attendance/          # Geofenced coordinate matching engine
+│   ├── logs/                # Session inactivity monitor hooks
+│   └── reports/             # Shift-end mandatory documentation streams
+│
+├── leads/                   # B2C Intake & Routing Domain
+│   ├── webhooks/            # Omnichannel third-party data ingesters
+│   └── assignment/          # Deterministic regional/budget routing engines
+│
+├── communication/           # Live Communication Integration Matrix
+│   ├── streams/             # WebRTC handshake gateways & auto-recording processors
+│   └── timelines/           # Central chronological customer event aggregator logs
+│
+├── pipeline/                # Admissions Lifecycle Tracking Domain
+│   ├── admission/           # Multi-state student lifecycle Kanban handlers
+│   └── vault/               # Malware-screened file storage & compliance validation
+│
+├── prm/                     # B2B Partner Relationship Management Domain
+│   ├── organizations/       # B2B school networks, agencies, and contact graphs
+│   └── accounts/            # Isolated partner portals & automated referral pipelines
+│
+└── finance/                 # Enterprise Fiscal Control Domain
+    └── ledgers/             # Multi-currency automated partner commission computation metrics
 ```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
