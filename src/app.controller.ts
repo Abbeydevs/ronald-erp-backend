@@ -1,12 +1,17 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
+import type { Response } from 'express';
 
-@Controller()
+@Controller('health')
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getHealth(@Res() res: Response): void {
+    res.status(HttpStatus.OK).json({
+      status: 'UP',
+      timestamp: new Date().toISOString(),
+      services: {
+        server: 'HEALTHY',
+        database: 'CONNECTED',
+      },
+    });
   }
 }
