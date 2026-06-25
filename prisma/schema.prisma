@@ -18,18 +18,52 @@ enum Role {
   STUDENT
 }
 
-model User {
-  id                String  @id @default(uuid())
-  name              String
-  email             String  @unique
-  hash              String
-  role              Role
-  branchId          String?
-  isActive          Boolean @default(true)
-  deviceFingerprint String?
+model DeviceFingerprint {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fingerprintHash String   @unique
+  userAgent       String?
+  ipAddress       String?
+  lastSeen        DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  @@map("device_prints")
+}
+
+model Invitation {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  token     String   @unique
+  role      Role
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+
+  generatedById String
+  generatedBy   User   @relation("AdminInvites", fields: [generatedById], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("invitations")
+}
+
+model User {
+  id       String  @id @default(uuid())
+  name     String
+  email    String  @unique
+  hash     String
+  role     Role
+  branchId String?
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  generatedInvites   Invitation[]        @relation("AdminInvites")
+  deviceFingerprints DeviceFingerprint[]
 
   @@map("users")
 }
