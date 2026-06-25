@@ -5,6 +5,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { Roles, RolesGuard } from './guards/roles.guard';
 import { Role } from '@prisma/client';
 import * as express from 'express';
+import { RegisterStaffDto } from './dto/register-staff.dto';
+import { LoginDto } from './dto/login.dto';
 
 interface AuthenticatedRequest extends express.Request {
   user: {
@@ -27,5 +29,26 @@ export class AuthController {
   ) {
     const adminId = req.user.id;
     return this.authService.generateInvitation(createInviteDto, adminId);
+  }
+
+  @Post('register')
+  async register(
+    @Body() registerStaffDto: RegisterStaffDto,
+    @Req() req: express.Request,
+  ) {
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.registerStaff(
+      registerStaffDto,
+      ipAddress,
+      userAgent,
+    );
+  }
+
+  @Post('login')
+  async login(@Body() loginDto: LoginDto, @Req() req: express.Request) {
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.login(loginDto, ipAddress, userAgent);
   }
 }
