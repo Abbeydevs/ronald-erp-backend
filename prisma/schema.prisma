@@ -18,6 +18,64 @@ enum Role {
   STUDENT
 }
 
+enum WorkMode {
+  ONSITE
+  REMOTE
+  HYBRID
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model Attendance {
+  id       String  @id @default(uuid())
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  date     DateTime  @db.Date
+  clockIn  DateTime  @default(now())
+  clockOut DateTime?
+
+  clockInLat Float?
+  clockInLng Float?
+
+  isLate       Boolean @default(false)
+  isOvertime   Boolean @default(false)
+  isAutoClosed Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("attendances")
+}
+
+model Branch {
+  id           String @id @default(uuid())
+  name         String
+  latitude     Float
+  longitude    Float
+  radiusMeters Float  @default(50)
+  openingTime  String @default("09:00")
+  closingTime  String @default("18:00")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  attendances Attendance[]
+
+  @@map("branches")
+}
+
 model DeviceFingerprint {
   id     String @id @default(uuid())
   userId String
@@ -56,14 +114,19 @@ model User {
   email    String  @unique
   hash     String
   role     Role
-  branchId String?
   isActive Boolean @default(true)
+
+  branchId   String?
+  branch     Branch?     @relation(fields: [branchId], references: [id])
+  workMode   WorkMode    @default(ONSITE)
+  remoteDays DayOfWeek[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   generatedInvites   Invitation[]        @relation("AdminInvites")
   deviceFingerprints DeviceFingerprint[]
+  attendances        Attendance[]
 
   @@map("users")
 }
