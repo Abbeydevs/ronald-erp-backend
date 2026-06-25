@@ -65,8 +65,6 @@ export class AuthService {
       throw new BadRequestException('This invitation has already been used.');
     if (invitation.expiresAt < new Date())
       throw new BadRequestException('This invitation has expired.');
-    if (invitation.email !== dto.email)
-      throw new BadRequestException('Email does not match the invitation.');
 
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(dto.password, saltRounds);
@@ -75,7 +73,7 @@ export class AuthService {
       const user = await prisma.user.create({
         data: {
           name: dto.name,
-          email: dto.email,
+          email: invitation.email,
           hash: hashedPassword,
           role: invitation.role,
           deviceFingerprints: {

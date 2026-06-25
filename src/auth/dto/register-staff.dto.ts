@@ -1,18 +1,9 @@
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsString,
-  Matches,
-  MinLength,
-} from 'class-validator';
+import { IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
 
 export class RegisterStaffDto {
   @IsString()
   @IsNotEmpty()
   name!: string;
-
-  @IsEmail({}, { message: 'A valid email address must be provided.' })
-  email!: string;
 
   @IsString()
   @IsNotEmpty()
