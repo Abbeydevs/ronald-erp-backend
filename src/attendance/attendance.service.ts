@@ -113,12 +113,17 @@ export class AttendanceService {
   }
 
   async getTodayStatus(userId: string) {
-    const today = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    const startOfDay = new Date(`${todayStr}T00:00:00.000Z`);
+    const endOfDay = new Date(`${todayStr}T23:59:59.999Z`);
 
     const record = await this.prisma.attendance.findFirst({
       where: {
         userId,
-        date: today,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
       },
     });
 
@@ -131,12 +136,17 @@ export class AttendanceService {
   }
 
   async clockOut(userId: string) {
-    const today = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    const startOfDay = new Date(`${todayStr}T00:00:00.000Z`);
+    const endOfDay = new Date(`${todayStr}T23:59:59.999Z`);
 
     const record = await this.prisma.attendance.findFirst({
       where: {
         userId,
-        date: today,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
         clockOut: null,
       },
     });
@@ -159,17 +169,24 @@ export class AttendanceService {
   async handleAutoClockOut() {
     this.logger.log('Initiating automated shift closer...');
 
-    const today = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    const startOfDay = new Date(`${todayStr}T00:00:00.000Z`);
+    const endOfDay = new Date(`${todayStr}T23:59:59.999Z`);
+
     const currentTime = new Date().toISOString();
 
     try {
       const result = await this.prisma.attendance.updateMany({
         where: {
-          date: today,
+          date: {
+            gte: startOfDay,
+            lte: endOfDay,
+          },
           clockOut: null,
         },
         data: {
           clockOut: currentTime,
+          isAutoClosed: true,
         },
       });
 
