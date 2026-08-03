@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { HrAttendanceModule } from './hr-attendance/hr-attendance.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     PrismaModule,
     AuthModule,
     HrAttendanceModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

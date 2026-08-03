@@ -10,12 +10,14 @@ import { RegisterStaffDto } from './dto/register-staff.dto';
 import { LoginDto } from './dto/login.dto';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async generateInvitation(dto: CreateInviteDto, adminId: string) {
@@ -43,11 +45,15 @@ export class AuthService {
       },
     });
 
-    const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const inviteUrl = `${frontendBaseUrl}/register?token=${invitation.token}`;
+
+    await this.emailService.sendStaffInvite(dto.email, dto.role, inviteUrl);
+
     return {
       message: 'Invitation generated successfully.',
       expiresAt: invitation.expiresAt,
-      inviteUrl: `${frontendBaseUrl}/register?token=${invitation.token}`,
+      inviteUrl,
     };
   }
 
