@@ -6,6 +6,8 @@ import { AuthModule } from './auth/auth.module';
 import { HrAttendanceModule } from './hr-attendance/hr-attendance.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EmailModule } from './email/email.module';
+import { BranchModule } from './branch/branch.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { EmailModule } from './email/email.module';
     AuthModule,
     HrAttendanceModule,
     EmailModule,
+    BranchModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
