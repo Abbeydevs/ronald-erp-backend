@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  Get,
+  Patch,
+} from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -28,5 +36,19 @@ export class AttendanceController {
       message: 'Clock-in successful.',
       data: record,
     };
+  }
+
+  @Get('status')
+  async getShiftStatus(@Req() req: AuthenticatedRequest) {
+    const status = await this.attendanceService.getTodayStatus(req.user.id);
+    return { success: true, data: status };
+  }
+
+  @Patch('clock-out')
+  async clockOut(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ success: boolean; message: string }> {
+    await this.attendanceService.clockOut(req.user.id);
+    return { success: true, message: 'Shift closed successfully.' };
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClockInDto } from './dto/clock-in.dto';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class AttendanceService {
@@ -109,5 +110,74 @@ export class AttendanceService {
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  }
+
+  async getTodayStatus(userId: string) {
+    const today = new Date().toISOString().split('T')[0];
+
+    const record = await this.prisma.attendance.findFirst({
+      where: {
+        userId,
+        date: today,
+      },
+    });
+
+    return {
+      hasClockedIn: !!record,
+      isActiveShift: !!record && !record.clockOut,
+      hasClockedOut: !!record?.clockOut,
+      record,
+    };
+  }
+
+  async clockOut(userId: string) {
+    const today = new Date().toISOString().split('T')[0];
+
+    const record = await this.prisma.attendance.findFirst({
+      where: {
+        userId,
+        date: today,
+        clockOut: null,
+      },
+    });
+
+    if (!record) {
+      throw new BadRequestException('No active shift found to clock out of.');
+    }
+
+    const updatedRecord = await this.prisma.attendance.update({
+      where: { id: record.id },
+      data: {
+        clockOut: new Date().toISOString(),
+      },
+    });
+
+    return updatedRecord;
+  }
+
+  @Cron('0 17,0 * * *', { timeZone: 'Africa/Lagos' })
+  async handleAutoClockOut() {
+    this.logger.log('Initiating automated shift closer...');
+
+    const today = new Date().toISOString().split('T')[0];
+    const currentTime = new Date().toISOString();
+
+    try {
+      const result = await this.prisma.attendance.updateMany({
+        where: {
+          date: today,
+          clockOut: null,
+        },
+        data: {
+          clockOut: currentTime,
+        },
+      });
+
+      this.logger.log(
+        `Automated shift closer completed. Auto-closed ${result.count} active shifts.`,
+      );
+    } catch (error) {
+      this.logger.error('Failed to execute automated shift closer', error);
+    }
   }
 }
