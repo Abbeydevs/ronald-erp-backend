@@ -34,4 +34,17 @@ export class PresenceService {
       this.logger.error('Failed to process idle threshold breach', error);
     }
   }
+
+  async getIdleAlerts() {
+    return this.prisma.idleAlert.findMany({
+      include: {
+        user: {
+          select: { name: true, email: true, role: true, branchId: true },
+        },
+      },
+      orderBy: {
+        lockedAt: 'desc',
+      },
+    });
+  }
 }
