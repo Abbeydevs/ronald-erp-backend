@@ -8,6 +8,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { EmailModule } from './email/email.module';
 import { BranchModule } from './branch/branch.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { PresenceModule } from './presence/presence.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AttendanceModule } from './attendance/attendance.module';
     EmailModule,
     BranchModule,
     AttendanceModule,
+    PresenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
