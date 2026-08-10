@@ -10,6 +10,8 @@ import { BranchModule } from './branch/branch.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { PresenceModule } from './presence/presence.module';
 import { ReportsModule } from './reports/reports.module';
+import { LeadsModule } from './leads/leads.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { ReportsModule } from './reports/reports.module';
     AttendanceModule,
     PresenceModule,
     ReportsModule,
+    LeadsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

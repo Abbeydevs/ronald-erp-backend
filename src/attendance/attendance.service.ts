@@ -10,22 +10,9 @@ export class AttendanceService {
   constructor(private readonly prisma: PrismaService) {}
 
   async clockIn(userId: string, dto: ClockInDto) {
-    const nowWAT = new Date(
-      new Date().toLocaleString('en-US', { timeZone: 'Africa/Lagos' }),
-    );
-    const currentHour = nowWAT.getHours();
-
-    const startOfDayWAT = new Date(nowWAT);
-    startOfDayWAT.setHours(0, 0, 0, 0);
-
+    // Single open-shift check — no date-boundary math, no ambiguity.
     const activeShift = await this.prisma.attendance.findFirst({
-      where: {
-        userId,
-        clockOut: null,
-        date: {
-          gte: startOfDayWAT,
-        },
-      },
+      where: { userId, clockOut: null },
     });
 
     if (activeShift) {
@@ -34,9 +21,11 @@ export class AttendanceService {
       );
     }
 
-    const isAfterHours = currentHour >= 17;
+    // WAT wall-clock hour, computed without the toLocaleString round-trip
+    const currentHour = this.getWATHour();
+    const isAfterHours = currentHour >= 17 || currentHour < 9;
 
-    let branchId = null;
+    let branchId: string | null = null;
 
     if (!isAfterHours) {
       if (!dto.latitude || !dto.longitude) {
@@ -76,7 +65,7 @@ export class AttendanceService {
       data: {
         userId,
         branchId,
-        date: nowWAT,
+        date: new Date(), // just for reporting/records — not used for lookups anymore
         clockInLat: isAfterHours ? null : dto.latitude,
         clockInLng: isAfterHours ? null : dto.longitude,
       },
@@ -86,6 +75,12 @@ export class AttendanceService {
       `User ${userId} clocked in successfully. After hours: ${isAfterHours}`,
     );
     return attendance;
+  }
+
+  private getWATHour(): number {
+    const WAT_OFFSET_MS = 60 * 60 * 1000;
+    const watInstant = new Date(Date.now() + WAT_OFFSET_MS);
+    return watInstant.getUTCHours();
   }
 
   private calculateDistance(
@@ -113,42 +108,23 @@ export class AttendanceService {
   }
 
   async getTodayStatus(userId: string) {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const startOfDay = new Date(`${todayStr}T00:00:00.000Z`);
-    const endOfDay = new Date(`${todayStr}T23:59:59.999Z`);
-
     const record = await this.prisma.attendance.findFirst({
-      where: {
-        userId,
-        date: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
+      where: { userId, clockOut: null },
+      orderBy: { clockIn: 'desc' },
     });
 
     return {
       hasClockedIn: !!record,
-      isActiveShift: !!record && !record.clockOut,
-      hasClockedOut: !!record?.clockOut,
+      isActiveShift: !!record,
+      hasClockedOut: false,
       record,
     };
   }
 
   async clockOut(userId: string) {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const startOfDay = new Date(`${todayStr}T00:00:00.000Z`);
-    const endOfDay = new Date(`${todayStr}T23:59:59.999Z`);
-
     const record = await this.prisma.attendance.findFirst({
-      where: {
-        userId,
-        date: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-        clockOut: null,
-      },
+      where: { userId, clockOut: null },
+      orderBy: { clockIn: 'desc' },
     });
 
     if (!record) {
@@ -157,9 +133,7 @@ export class AttendanceService {
 
     const updatedRecord = await this.prisma.attendance.update({
       where: { id: record.id },
-      data: {
-        clockOut: new Date().toISOString(),
-      },
+      data: { clockOut: new Date() },
     });
 
     return updatedRecord;
@@ -169,23 +143,11 @@ export class AttendanceService {
   async handleAutoClockOut() {
     this.logger.log('Initiating automated shift closer...');
 
-    const todayStr = new Date().toISOString().split('T')[0];
-    const startOfDay = new Date(`${todayStr}T00:00:00.000Z`);
-    const endOfDay = new Date(`${todayStr}T23:59:59.999Z`);
-
-    const currentTime = new Date().toISOString();
-
     try {
       const result = await this.prisma.attendance.updateMany({
-        where: {
-          date: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
-          clockOut: null,
-        },
+        where: { clockOut: null },
         data: {
-          clockOut: currentTime,
+          clockOut: new Date(),
           isAutoClosed: true,
         },
       });

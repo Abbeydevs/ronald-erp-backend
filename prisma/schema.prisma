@@ -8,6 +8,37 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum LeadSource {
+  FACEBOOK
+  WEBSITE
+  WALK_IN
+  MANUAL
+}
+
+enum LeadStatus {
+  UNASSIGNED
+  ASSIGNED
+  CONTACTED
+  CONVERTED
+  LOST
+}
+
+enum LeadPriority {
+  HOT
+  WARM
+  COLD
+}
+
 enum Role {
   SUPER_ADMIN
   ADMISSIONS_COUNSELLOR
@@ -22,16 +53,6 @@ enum WorkMode {
   ONSITE
   REMOTE
   HYBRID
-}
-
-enum DayOfWeek {
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-  SUNDAY
 }
 
 model Attendance {
@@ -134,6 +155,29 @@ model Invitation {
   @@map("invitations")
 }
 
+model Lead {
+  id            String  @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  countryChoice String?
+  budget        String?
+  courseOfStudy String?
+
+  source   LeadSource   @default(MANUAL)
+  status   LeadStatus   @default(UNASSIGNED)
+  priority LeadPriority @default(WARM)
+
+  assignedToId String?
+  assignedTo   User?   @relation("AssignedLeads", fields: [assignedToId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("leads")
+}
+
 model User {
   id       String  @id @default(uuid())
   name     String
@@ -155,6 +199,7 @@ model User {
   attendances        Attendance[]
   idleAlerts         IdleAlert[]
   dailyReports       DailyReport[]
+  assignedLeads      Lead[]              @relation("AssignedLeads")
 
   @@map("users")
 }
