@@ -76,6 +76,20 @@ model Branch {
   @@map("branches")
 }
 
+model DailyReport {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date        String
+  content     String   @db.Text
+  submittedAt DateTime @default(now())
+  isLate      Boolean  @default(false)
+
+  @@unique([userId, date])
+  @@map("daily_reports")
+}
+
 model DeviceFingerprint {
   id     String @id @default(uuid())
   userId String
@@ -140,6 +154,7 @@ model User {
   deviceFingerprints DeviceFingerprint[]
   attendances        Attendance[]
   idleAlerts         IdleAlert[]
+  dailyReports       DailyReport[]
 
   @@map("users")
 }

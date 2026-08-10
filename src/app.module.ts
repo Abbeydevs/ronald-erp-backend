@@ -9,6 +9,7 @@ import { EmailModule } from './email/email.module';
 import { BranchModule } from './branch/branch.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { PresenceModule } from './presence/presence.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PresenceModule } from './presence/presence.module';
     BranchModule,
     AttendanceModule,
     PresenceModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
