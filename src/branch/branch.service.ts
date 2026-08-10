@@ -1,7 +1,13 @@
-import { Injectable, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { Branch } from '@prisma/client';
+import { UpdateBranchDto } from './dto/update-branch.dto';
 
 @Injectable()
 export class BranchService {
@@ -41,5 +47,61 @@ export class BranchService {
     });
     this.logger.log(`Fetched ${branches.length} branches`);
     return branches;
+  }
+
+  async updateBranch(id: string, dto: UpdateBranchDto): Promise<Branch> {
+    const existingBranch = await this.prisma.branch.findUnique({
+      where: { id },
+    });
+
+    if (!existingBranch) {
+      throw new NotFoundException(`Branch with ID ${id} not found.`);
+    }
+
+    if (
+      dto.name &&
+      dto.name.toLowerCase() !== existingBranch.name.toLowerCase()
+    ) {
+      const nameConflict = await this.prisma.branch.findFirst({
+        where: { name: { equals: dto.name, mode: 'insensitive' } },
+      });
+
+      if (nameConflict) {
+        throw new ConflictException(
+          `A branch named "${dto.name}" already exists.`,
+        );
+      }
+    }
+
+    const updatedBranch = await this.prisma.branch.update({
+      where: { id },
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.latitude && { latitude: dto.latitude }),
+        ...(dto.longitude && { longitude: dto.longitude }),
+        ...(dto.radiusMeters && { radiusMeters: dto.radiusMeters }),
+        ...(dto.openingTime && { openingTime: dto.openingTime }),
+        ...(dto.closingTime && { closingTime: dto.closingTime }),
+      },
+    });
+
+    this.logger.log(`Branch updated successfully: ${updatedBranch.name}`);
+    return updatedBranch;
+  }
+
+  async deleteBranch(id: string): Promise<void> {
+    const existingBranch = await this.prisma.branch.findUnique({
+      where: { id },
+    });
+
+    if (!existingBranch) {
+      throw new NotFoundException(`Branch with ID ${id} not found.`);
+    }
+
+    await this.prisma.branch.delete({
+      where: { id },
+    });
+
+    this.logger.log(`Branch deleted successfully: ${existingBranch.name}`);
   }
 }
