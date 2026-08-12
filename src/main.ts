@@ -14,8 +14,8 @@ async function bootstrap(): Promise<void> {
         !origin ||
         origin.startsWith('http://localhost:') ||
         origin.startsWith('https://localhost:') ||
-        origin.startsWith('https://evil-apples-speak.loca.lt') ||
-        origin.includes('.loca.lt')
+        origin.includes('.loca.lt') ||
+        origin.includes('vercel.app')
       ) {
         callback(null, true);
       } else {
