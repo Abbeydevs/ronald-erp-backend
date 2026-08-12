@@ -65,4 +65,12 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     client.to(data.roomId).emit('ice-candidate', { candidate: data.candidate });
   }
+
+  @SubscribeMessage('end-call')
+  handleEndCall(
+    @MessageBody() data: { roomId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    client.to(data.roomId).emit('call-ended');
+  }
 }
