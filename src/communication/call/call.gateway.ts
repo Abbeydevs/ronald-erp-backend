@@ -67,13 +67,8 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('end-call')
-  handleEndCall(
-    @MessageBody() data: { roomId: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    // ADD THIS LOG:
-    console.log(`RECEIVED HANGUP FOR ROOM: ${data.roomId}`);
-
-    client.to(data.roomId).emit('call-ended');
+  handleEndCall(@MessageBody() data: { roomId: string }) {
+    this.logger.log(`Broadcasting hangup to room: ${data.roomId}`);
+    this.server.to(data.roomId).emit('call-ended');
   }
 }
