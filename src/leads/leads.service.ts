@@ -1,11 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateLeadDto,
   BulkAssignDto,
   FacebookWebhookPayload,
 } from './dto/create-lead.dto';
-import { LeadStatus, LeadPriority } from '@prisma/client';
+import { LeadStatus, LeadPriority, LeadSource } from '@prisma/client';
 
 @Injectable()
 export class LeadsService {
@@ -13,56 +13,96 @@ export class LeadsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private calculatePriority(dto: Partial<CreateLeadDto>): LeadPriority {
+    let score = 0;
+
+    if (dto.phone && dto.email) score += 20;
+    if (dto.budget) {
+      const budgetLower = dto.budget.toLowerCase();
+      if (
+        budgetLower.includes('high') ||
+        budgetLower.includes('20') ||
+        budgetLower.includes('30')
+      ) {
+        score += 40;
+      } else {
+        score += 20;
+      }
+    }
+    if (dto.countryChoice) score += 20;
+    if (dto.courseOfStudy) score += 10;
+    if (dto.source === LeadSource.WALK_IN || dto.source === LeadSource.FACEBOOK)
+      score += 10;
+
+    if (score >= 60) return LeadPriority.HOT;
+    if (score >= 30) return LeadPriority.WARM;
+    return LeadPriority.COLD;
+  }
+
   async create(createLeadDto: CreateLeadDto) {
+    const existing = await this.findExistingLead(
+      createLeadDto.email,
+      createLeadDto.phone,
+    );
+
+    if (existing) {
+      this.logger.warn(`Rejected duplicate lead entry: ${createLeadDto.email}`);
+      throw new ConflictException(
+        'A lead with this email or phone number already exists in the system.',
+      );
+    }
+
+    const priority = this.calculatePriority(createLeadDto);
+
     return this.prisma.lead.create({
       data: {
         ...createLeadDto,
+        source: createLeadDto.source || LeadSource.WEBSITE,
         status: LeadStatus.UNASSIGNED,
-        priority: LeadPriority.WARM,
+        priority,
+        assignedToId: null,
       },
+    });
+  }
+
+  private async findExistingLead(email?: string, phone?: string) {
+    if (!email && !phone) return null;
+
+    const conditions: Array<{ email?: string; phone?: string }> = [];
+    if (email) conditions.push({ email });
+    if (phone) conditions.push({ phone });
+
+    return this.prisma.lead.findFirst({
+      where: { OR: conditions },
     });
   }
 
   async getAllLeads() {
     return this.prisma.lead.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
       include: {
-        assignedTo: {
-          select: { name: true },
-        },
+        assignedTo: { select: { name: true } },
       },
     });
   }
 
   async getUnassignedPool() {
     return this.prisma.lead.findMany({
-      where: {
-        status: LeadStatus.UNASSIGNED,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: { status: LeadStatus.UNASSIGNED },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async getMyLeads(userId: string) {
     return this.prisma.lead.findMany({
-      where: {
-        assignedToId: userId,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: { assignedToId: userId },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async bulkAssign(dto: BulkAssignDto) {
     const result = await this.prisma.lead.updateMany({
-      where: {
-        id: { in: dto.leadIds },
-      },
+      where: { id: { in: dto.leadIds } },
       data: {
         assignedToId: dto.counsellorId,
         status: LeadStatus.ASSIGNED,
@@ -115,6 +155,8 @@ export class LeadsService {
       let email = '';
       let phone = '';
       let fullName = 'Meta lead';
+      let countryChoice = '';
+      let courseOfStudy = '';
 
       if (fbData.field_data && Array.isArray(fbData.field_data)) {
         for (const field of fbData.field_data) {
@@ -122,6 +164,9 @@ export class LeadsService {
           if (field.name === 'email') email = value;
           if (field.name === 'phone_number') phone = value;
           if (field.name === 'full_name') fullName = value;
+          if (field.name.includes('country')) countryChoice = value;
+          if (field.name.includes('course') || field.name.includes('program'))
+            courseOfStudy = value;
         }
       }
 
@@ -129,19 +174,19 @@ export class LeadsService {
       const firstName = nameParts[0] || 'Unknown';
       const lastName = nameParts.slice(1).join(' ') || 'Lead';
 
-      const newLead = await this.prisma.lead.create({
-        data: {
-          firstName,
-          lastName,
-          email,
-          phone,
-          source: 'FACEBOOK',
-          status: 'UNASSIGNED',
-          priority: 'HOT',
-        },
+      await this.create({
+        firstName,
+        lastName,
+        email,
+        phone,
+        countryChoice,
+        courseOfStudy,
+        source: LeadSource.FACEBOOK,
       });
 
-      this.logger.log(`Successfully ingested Facebook lead: ${newLead.id}`);
+      this.logger.log(
+        `Successfully ingested and classified Facebook lead for ${email || fullName}`,
+      );
       return { received: true };
     } catch (error) {
       this.logger.error('Critical failure processing Facebook lead', error);
