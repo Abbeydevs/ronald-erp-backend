@@ -44,25 +44,25 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('webrtc-offer')
   handleOffer(
-    @MessageBody() data: { roomId: string; signal: any },
+    @MessageBody() data: { roomId: string; signal: Record<string, unknown> },
     @ConnectedSocket() client: Socket,
   ) {
-    client.to(data.roomId).emit('webrtc-offer', data.signal);
+    client.to(data.roomId).emit('webrtc-offer', { signal: data.signal });
   }
 
   @SubscribeMessage('webrtc-answer')
   handleAnswer(
-    @MessageBody() data: { roomId: string; signal: any },
+    @MessageBody() data: { roomId: string; signal: Record<string, unknown> },
     @ConnectedSocket() client: Socket,
   ) {
-    client.to(data.roomId).emit('webrtc-answer', data.signal);
+    client.to(data.roomId).emit('webrtc-answer', { signal: data.signal });
   }
 
-  @SubscribeMessage('webrtc-ice-candidate')
+  @SubscribeMessage('ice-candidate')
   handleIceCandidate(
-    @MessageBody() data: { roomId: string; candidate: any },
+    @MessageBody() data: { roomId: string; candidate: Record<string, unknown> },
     @ConnectedSocket() client: Socket,
   ) {
-    client.to(data.roomId).emit('webrtc-ice-candidate', data.candidate);
+    client.to(data.roomId).emit('ice-candidate', { candidate: data.candidate });
   }
 }
