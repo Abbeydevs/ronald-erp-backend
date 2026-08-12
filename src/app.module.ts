@@ -12,6 +12,7 @@ import { PresenceModule } from './presence/presence.module';
 import { ReportsModule } from './reports/reports.module';
 import { LeadsModule } from './leads/leads.module';
 import { UsersModule } from './users/users.module';
+import { CommunicationModule } from './communication/communication.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { UsersModule } from './users/users.module';
     ReportsModule,
     LeadsModule,
     UsersModule,
+    CommunicationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

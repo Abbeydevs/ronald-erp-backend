@@ -90,4 +90,10 @@ export class LeadsController {
   bulkAssign(@Body() bulkAssignDto: BulkAssignDto) {
     return this.leadsService.bulkAssign(bulkAssignDto);
   }
+
+  @Get(':id')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  async getLeadById(@Param('id') id: string) {
+    return this.leadsService.getLeadById(id);
+  }
 }

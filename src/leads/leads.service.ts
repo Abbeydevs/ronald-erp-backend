@@ -1,4 +1,9 @@
-import { Injectable, Logger, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateLeadDto,
@@ -192,5 +197,20 @@ export class LeadsService {
       this.logger.error('Critical failure processing Facebook lead', error);
       return { received: true };
     }
+  }
+
+  async getLeadById(id: string) {
+    const lead = await this.prisma.lead.findUnique({
+      where: { id },
+      include: {
+        assignedTo: { select: { name: true } },
+      },
+    });
+
+    if (!lead) {
+      throw new NotFoundException(`Lead with ID ${id} not found`);
+    }
+
+    return lead;
   }
 }
