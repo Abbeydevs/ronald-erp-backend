@@ -15,6 +15,8 @@ import { UsersModule } from './users/users.module';
 import { CommunicationModule } from './communication/communication.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { PipelineModule } from './pipeline/pipeline.module';
+import { VaultModule } from './vault/vault.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { join } from 'path';
     LeadsModule,
     UsersModule,
     CommunicationModule,
+    PipelineModule,
+    VaultModule,
   ],
   controllers: [AppController],
   providers: [AppService],

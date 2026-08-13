@@ -8,6 +8,18 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum ApplicationStage {
+  DOCUMENT_GATHERING
+  DOCUMENT_REVIEW
+  SCHOOL_APPLYING
+  SCHOOL_DECISION_PENDING
+  FINANCE_INVOICING
+  FINANCE_VERIFYING
+  VISA_PREPARATION
+  VISA_DECISION_PENDING
+  TRAVEL_READY
+}
+
 enum CommType {
   CALL
   EMAIL
@@ -23,6 +35,21 @@ enum DayOfWeek {
   FRIDAY
   SATURDAY
   SUNDAY
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum DocumentType {
+  PASSPORT
+  TRANSCRIPT
+  BANK_STATEMENT
+  MEDICAL
+  OFFER_LETTER
+  OTHER
 }
 
 enum LeadSource {
@@ -60,6 +87,29 @@ enum WorkMode {
   ONSITE
   REMOTE
   HYBRID
+}
+
+model Application {
+  id     String @id @default(uuid())
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  stage ApplicationStage @default(DOCUMENT_GATHERING)
+
+  counsellorId String?
+  counsellor   User?   @relation("ApplicationCounsellor", fields: [counsellorId], references: [id])
+  financeId    String?
+  finance      User?   @relation("ApplicationFinance", fields: [financeId], references: [id])
+  visaId       String?
+  visa         User?   @relation("ApplicationVisa", fields: [visaId], references: [id])
+
+  documents Document[]
+  proofs    ProofOfWork[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("applications")
 }
 
 model Attendance {
@@ -155,6 +205,25 @@ model DeviceFingerprint {
   @@map("device_prints")
 }
 
+model Document {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  type          DocumentType
+  fileUrl       String
+  status        DocumentStatus @default(PENDING)
+  rejectionNote String?        @db.Text
+
+  verifiedById String?
+  verifiedBy   User?   @relation("DocumentVerifier", fields: [verifiedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("documents")
+}
+
 model IdleAlert {
   id     String @id @default(uuid())
   userId String
@@ -198,6 +267,10 @@ model Lead {
   status   LeadStatus   @default(UNASSIGNED)
   priority LeadPriority @default(WARM)
 
+  studentId    String?       @unique
+  student      User?         @relation("StudentProfile", fields: [studentId], references: [id])
+  applications Application[]
+
   assignedToId String?
   assignedTo   User?   @relation("AssignedLeads", fields: [assignedToId], references: [id])
 
@@ -208,6 +281,23 @@ model Lead {
   communicationLogs CommunicationLog[]
 
   @@map("leads")
+}
+
+model ProofOfWork {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  staffId String
+  staff   User   @relation(fields: [staffId], references: [id])
+
+  stageMovedTo ApplicationStage
+  fileUrl      String
+  notes        String           @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@map("proofs_of_work")
 }
 
 model User {
@@ -233,6 +323,13 @@ model User {
   dailyReports       DailyReport[]
   assignedLeads      Lead[]              @relation("AssignedLeads")
   communicationLogs  CommunicationLog[]
+
+  studentProfile          Lead?         @relation("StudentProfile")
+  counsellingApplications Application[] @relation("ApplicationCounsellor")
+  financeApplications     Application[] @relation("ApplicationFinance")
+  visaApplications        Application[] @relation("ApplicationVisa")
+  verifiedDocuments       Document[]    @relation("DocumentVerifier")
+  proofsOfWork            ProofOfWork[]
 
   @@map("users")
 }

@@ -188,4 +188,49 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendStudentPortalInvite(
+    email: string,
+    studentName: string,
+    inviteUrl: string,
+  ): Promise<boolean> {
+    try {
+      const { data, error } = await this.resend.emails.send({
+        from: 'Ronald Partners Admissions <onboarding@thesoftwarehub.tech>',
+        to: email,
+        subject: 'Welcome to Ronald Partners! Activate Your Student Portal',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #0fa3b1; margin-top: 0;">Welcome, ${studentName}!</h2>
+            <p>Your dedicated application portal at Ronald Partners is ready.</p>
+            <p>This secure portal is where you will upload your documents, track your university applications, and manage your visa process.</p>
+            <p>Click the button below to activate your account and set your private password. This link expires in 24 hours.</p>
+            <a href="${inviteUrl}" style="display:inline-block; margin: 16px 0; padding: 12px 24px; background-color: #0fa3b1; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Activate Student Portal
+            </a>
+            <p style="font-size: 13px; color: #64748b;">Or copy this link into your browser: <br/><a href="${inviteUrl}">${inviteUrl}</a></p>
+          </div>
+        `,
+      });
+
+      if (error) {
+        this.logger.error(
+          `Resend Student Invite Error: ${error.message}`,
+          error,
+        );
+        return false;
+      }
+
+      this.logger.log(
+        `Student portal invite dispatched to ${email}. ID: ${data?.id}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to dispatch student portal invite to ${email}`,
+        error,
+      );
+      return false;
+    }
+  }
 }
