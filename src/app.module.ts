@@ -13,10 +13,16 @@ import { ReportsModule } from './reports/reports.module';
 import { LeadsModule } from './leads/leads.module';
 import { UsersModule } from './users/users.module';
 import { CommunicationModule } from './communication/communication.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
     PrismaModule,
     AuthModule,
     HrAttendanceModule,
