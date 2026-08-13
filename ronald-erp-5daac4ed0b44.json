@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "ronald-erp",
+  "private_key_id": "5daac4ed0b4477b68bd8be665d82314145af4130",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDhvMUNxXowOvH9\nbU0iPHEQuMXM7MJ90F+oQp3MF0U4F1bwrVv67LxzdqeS1XGq2z8BPkVYnrf+9o7n\nz7sWk+IkCO4INSjMEDYqIjWZFGjOxWPMxU9q+PUBNQT9tdjQP85QDWjV899udfhG\nFWkV9/7UhjJORcSM0HscilL6AeV8VMypxMlS1dA3166iZLbI1DkwUEkBhDSylK5S\nF6UQ2gkgaAMvVZsva1tMVuPZh53YySjKRh6gpPkTEfBUUqhbeotG5KeSFF8enGWm\nv0uGDHTAm0we1DNGJyDKjC4N6RRIMsb9BRLdWWy2xZc832bAPbOkdvR3C2B/MjEu\nbGv2S6lRAgMBAAECggEABWfVMq4ZzdWdhZ90T0dyAC/iibSaODPRFJkKyRA+F7ik\nW/VUzGqWnS+4VdFvbENdjACzHasIVi5OkAHHFcRzEACYPaFTQaa6O1JQJQMqetga\nepT3gMTnLhEYVmCASYVbogpeKjBxt2YTDM+WsYBbrXhstDfiu+oCprVvxP2eYpak\nPndq5jQrNkFdiLFM9JELHvMMytczv42pP3QmqheerFey3k+WVN1v0MgkBL7oO5Y/\nJU6+80RMPICp4Bm1PIaN9cLuP44+huSCWiwJyXxbEXtK4IxSBnns37nPu/US3c0j\n7Gx+fxpPp6stWgGGiMu4DE4RPyd6evpuBKmdX9lz+QKBgQD4lxxPHlG8KPVz/DYQ\n36DgcZaRvPAb4DgWvjfrRefsp02peERAzDL9unUVCBesqpW47mYyllYOiYYL9HJT\nKwQkq6TFMmG6gbVv12Qbz0qCGKiNkrMTPO9eJZi8ewrWfE8lkMPGi4iCIq8xnDpi\n5x0urhHXYyRYyxaoyuHcy+7uuQKBgQDod0c3nG8hgfloDIHbapO94coMwwUA/A3g\nk5WmIzrm6faxt88fYsn73V/AHWc39MPNkFNzvEucx+qQTZfPjdfjm8byqvrfUIjh\nWW/JiMZNdcpalFW4WAOQtEuEC1MQ0MLog2lWVfdfAqFVQ9kbCmjo89kGH3fCPazQ\naaL7E6KDWQKBgEbMerKJ1wt4utdKqHdLyXzCvPhK0DOQO0k26aQnJ7N9vp+acg3m\nWktrFDdmM5/ogXXG5/JWYLIJNtUmzHylTqvG+sly3OSKVotA0/Ebq4O71B1l/3xm\nKWIt4P8lJ+QISV5QiYF9ceZmTHEbpoFOg0AtMUWfpdVoGc7+4S7KIgV5AoGAW9hM\nfe9DhQSaKn7Oi4c3Kg1cS+B9SJ9NSE5nEMXYjsUfX6XUonzgeq9DFl9HmbcN6Vi9\nb/uUEDR4O108vpc3FclFODlPdw2VlxtD7Gcqmg4QzerPV08G0ZQ6RchHoFwqtby9\n0IuUeahLX6m3zFQ3kNpPA3lJUqgVcB5cc0CVs7kCgYAcsvp529prNw+8dApDNhUi\nDgYguSTcgmHLrHUpNi1AVFFlQrSQqeLfVBFVFnrVjFQ9L8TsxK3sdYAbm0AmXjf5\n2KD5zsZecTOFHYWJnqfs8cQBayLRMf0yBYhGYYh6e9odXJKKsW8zXN7bghQ+vOXY\nToHOOoVrlpsauMVR0PdRSQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "crm-meet-bot@ronald-erp.iam.gserviceaccount.com",
+  "client_id": "102690306362008977188",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/crm-meet-bot%40ronald-erp.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

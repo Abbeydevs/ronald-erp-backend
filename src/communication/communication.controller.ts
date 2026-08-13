@@ -10,12 +10,12 @@ import {
   Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { Role } from '@prisma/client';
 import { CommunicationService } from './communication.service';
+import { ScheduleMeetDto, SendEmailDto } from './dto';
 
 interface RequestWithUser extends Express.Request {
   user: {
@@ -33,15 +33,7 @@ export class CommunicationController {
   @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads/recordings',
-        filename: (req, file, callback) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname) || '.webm';
-          callback(null, `call-${uniqueSuffix}${ext}`);
-        },
-      }),
+      storage: memoryStorage(),
       limits: {
         fileSize: 50 * 1024 * 1024,
       },
@@ -63,6 +55,27 @@ export class CommunicationController {
       },
       file,
     );
+  }
+
+  @Post('schedule/meet')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  async scheduleMeet(
+    @Body() dto: ScheduleMeetDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.commService.scheduleMeet(dto, req.user.id);
+  }
+
+  @Post('send-email')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  async sendEmail(@Body() dto: SendEmailDto, @Req() req: RequestWithUser) {
+    return this.commService.sendEmailToStudent(dto, req.user.id);
+  }
+
+  @Get('timeline/:leadId')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  async getLeadTimeline(@Param('leadId') leadId: string) {
+    return this.commService.getLogsForLead(leadId);
   }
 
   @Get('logs/:leadId')

@@ -12,6 +12,7 @@ enum CommType {
   CALL
   EMAIL
   WHATSAPP
+  MEETING
 }
 
 enum DayOfWeek {
@@ -104,17 +105,25 @@ model Branch {
 }
 
 model CommunicationLog {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   leadId       String
   counsellorId String
   type         CommType
   duration     Int?
+  subject      String?
+  content      String?   @db.Text
   recordingUrl String?
   notes        String?
-  createdAt    DateTime @default(now())
+  meetUrl      String?
+  scheduledAt  DateTime?
+
+  createdAt DateTime @default(now())
 
   lead       Lead @relation(fields: [leadId], references: [id])
   counsellor User @relation(fields: [counsellorId], references: [id])
+
+  @@index([leadId])
+  @@index([counsellorId])
 }
 
 model DailyReport {
@@ -192,8 +201,10 @@ model Lead {
   assignedToId String?
   assignedTo   User?   @relation("AssignedLeads", fields: [assignedToId], references: [id])
 
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  lastCommunicatedAt DateTime? @default(now())
+
   communicationLogs CommunicationLog[]
 
   @@map("leads")
