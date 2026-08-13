@@ -7,6 +7,7 @@ import { Role } from '@prisma/client';
 import * as express from 'express';
 import { RegisterStaffDto } from './dto/register-staff.dto';
 import { LoginDto } from './dto/login.dto';
+import { RegisterStudentDto } from './dto/register-student.dto';
 
 interface AuthenticatedRequest extends express.Request {
   user: {
@@ -50,5 +51,19 @@ export class AuthController {
     const ipAddress = req.ip || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
     return this.authService.login(loginDto, ipAddress, userAgent);
+  }
+
+  @Post('register-student')
+  async registerStudent(
+    @Body() registerStudentDto: RegisterStudentDto,
+    @Req() req: express.Request,
+  ) {
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.registerStudent(
+      registerStudentDto,
+      ipAddress,
+      userAgent,
+    );
   }
 }

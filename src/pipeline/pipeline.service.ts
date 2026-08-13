@@ -42,7 +42,7 @@ export class PipelineService {
     expiresAt.setHours(expiresAt.getHours() + 24);
 
     const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-    const inviteUrl = `${frontendBaseUrl}/register?token=${rawToken}`;
+    const inviteUrl = `${frontendBaseUrl}/student-activate?token=${rawToken}`;
     const studentName = `${lead.firstName} ${lead.lastName}`.trim();
 
     await this.prisma.$transaction(async (prisma) => {

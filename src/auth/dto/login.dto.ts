@@ -1,7 +1,18 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
+
+export enum PortalType {
+  STAFF = 'STAFF',
+  STUDENT = 'STUDENT',
+}
 
 export class LoginDto {
-  @IsEmail({}, { message: 'A valid email address must be provided.' })
+  @IsEmail()
   email!: string;
 
   @IsString()
@@ -11,4 +22,8 @@ export class LoginDto {
   @IsString()
   @IsNotEmpty()
   fingerprintHash!: string;
+
+  @IsEnum(PortalType)
+  @IsOptional()
+  portalType?: PortalType;
 }

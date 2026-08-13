@@ -7,10 +7,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { CreateInviteDto } from './dto/create-invite.dto';
 import { RegisterStaffDto } from './dto/register-staff.dto';
-import { LoginDto } from './dto/login.dto';
+import { LoginDto, PortalType } from './dto/login.dto';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from 'src/email/email.service';
+import { Role } from '@prisma/client';
+import { RegisterStudentDto } from './dto/register-student.dto';
 
 @Injectable()
 export class AuthService {
@@ -115,6 +117,22 @@ export class AuthService {
       );
     }
 
+    if (dto.portalType) {
+      const isStudent = user.role === 'STUDENT';
+
+      if (isStudent && dto.portalType === PortalType.STAFF) {
+        throw new UnauthorizedException(
+          'You are not a staff, select the student portal.',
+        );
+      }
+
+      if (!isStudent && dto.portalType === PortalType.STUDENT) {
+        throw new UnauthorizedException(
+          'You are a staff, select the staff portal.',
+        );
+      }
+    }
+
     const isPasswordValid = await bcrypt.compare(dto.password, user.hash);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials.');
@@ -152,5 +170,63 @@ export class AuthService {
         role: user.role,
       },
     };
+  }
+
+  async registerStudent(
+    dto: RegisterStudentDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const invitation = await this.prisma.invitation.findUnique({
+      where: { token: dto.token },
+    });
+
+    if (!invitation) throw new BadRequestException('Invalid invitation token.');
+    if (invitation.isUsed) throw new BadRequestException('Token already used.');
+
+    const lead = await this.prisma.lead.findFirst({
+      where: { email: invitation.email },
+    });
+
+    if (!lead) {
+      throw new BadRequestException('Associated lead record not found.');
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(dto.password, saltRounds);
+
+    const fullName = `${lead.firstName} ${lead.lastName}`.trim();
+
+    await this.prisma.$transaction(async (prisma) => {
+      const user = await prisma.user.create({
+        data: {
+          name: fullName,
+          email: invitation.email,
+          hash: hashedPassword,
+          role: Role.STUDENT,
+          deviceFingerprints: {
+            create: {
+              fingerprintHash: dto.fingerprintHash,
+              ipAddress,
+              userAgent,
+            },
+          },
+        },
+      });
+
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { studentId: user.id },
+      });
+
+      await prisma.invitation.update({
+        where: { id: invitation.id },
+        data: { isUsed: true },
+      });
+
+      return user;
+    });
+
+    return { message: 'Student account activated successfully.' };
   }
 }
