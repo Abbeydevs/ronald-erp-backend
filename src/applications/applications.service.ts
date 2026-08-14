@@ -1,8 +1,16 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApplicationStage, Role } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { UpdateStageDto } from './dto/update-stage.dto';
+import { SubmitProofOfWorkDto } from './dto/submit-proof-of-work.dto';
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
+import * as streamifier from 'streamifier';
 
 @Injectable()
 export class ApplicationsService {
@@ -75,5 +83,85 @@ export class ApplicationsService {
 
     this.logger.log(`Application ${id} moved to stage ${dto.stage}`);
     return updated;
+  }
+
+  async submitProofOfWork(
+    applicationId: string,
+    staffId: string,
+    dto: SubmitProofOfWorkDto,
+    file?: Express.Multer.File,
+  ) {
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+      include: { lead: true },
+    });
+
+    if (!application) {
+      throw new NotFoundException(
+        `Application with ID ${applicationId} not found.`,
+      );
+    }
+
+    let proofUrl = '';
+
+    if (file) {
+      try {
+        const uploadResult = await new Promise<UploadApiResponse>(
+          (resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              {
+                folder: 'ronald_crm_proof_of_work',
+                resource_type: 'auto',
+              },
+              (error, result) => {
+                if (error) return reject(new Error(error.message));
+                if (!result)
+                  return reject(new Error('Empty result from Cloudinary'));
+                resolve(result);
+              },
+            );
+            streamifier.createReadStream(file.buffer).pipe(uploadStream);
+          },
+        );
+        proofUrl = uploadResult.secure_url;
+      } catch (error) {
+        this.logger.error('Cloudinary Proof Upload Failed', error);
+        throw new BadRequestException(
+          'Failed to upload proof of work screenshot.',
+        );
+      }
+    }
+
+    const updatedApplication = await this.prisma.$transaction(
+      async (prisma) => {
+        const updatedApp = await prisma.application.update({
+          where: { id: applicationId },
+          data: { stage: dto.stage },
+        });
+
+        await prisma.proofOfWork.create({
+          data: {
+            applicationId: applicationId,
+            staffId: staffId,
+            stageMovedTo: dto.stage,
+            fileUrl: proofUrl,
+            notes: `${dto.title}: ${dto.description}`,
+          },
+        });
+
+        return updatedApp;
+      },
+    );
+
+    this.logger.log(
+      `Proof of work logged for application ${applicationId}. Advanced to ${dto.stage}`,
+    );
+
+    return {
+      success: true,
+      message: 'Proof of work submitted and application advanced successfully.',
+      data: updatedApplication,
+      proofUrl,
+    };
   }
 }
