@@ -9,6 +9,7 @@ import {
   Body,
   BadRequestException,
   Get,
+  Patch,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { VaultService } from './vault.service';
@@ -64,5 +65,33 @@ export class VaultController {
       type,
       file,
     );
+  }
+
+  @Get('documents/:applicationId')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  async getApplicationDocuments(@Param('applicationId') applicationId: string) {
+    return this.vaultService.getDocumentsByApplication(applicationId);
+  }
+
+  @Patch('documents/:documentId/verify')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  async verifyDocument(
+    @Param('documentId') documentId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.vaultService.verifyDocument(documentId, req.user.id);
+  }
+
+  @Patch('documents/:documentId/reject')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  async rejectDocument(
+    @Param('documentId') documentId: string,
+    @Body('reason') reason: string,
+    @Req() req: RequestWithUser,
+  ) {
+    if (!reason || reason.trim() === '') {
+      throw new BadRequestException('A reason for rejection must be provided.');
+    }
+    return this.vaultService.rejectDocument(documentId, req.user.id, reason);
   }
 }

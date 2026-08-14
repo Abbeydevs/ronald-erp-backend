@@ -84,6 +84,7 @@ export class LeadsService {
 
   async getAllLeads() {
     return this.prisma.lead.findMany({
+      where: { studentId: null },
       orderBy: { createdAt: 'desc' },
       include: {
         assignedTo: { select: { name: true } },
@@ -93,14 +94,14 @@ export class LeadsService {
 
   async getUnassignedPool() {
     return this.prisma.lead.findMany({
-      where: { status: LeadStatus.UNASSIGNED },
+      where: { status: LeadStatus.UNASSIGNED, studentId: null },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async getMyLeads(userId: string) {
     return this.prisma.lead.findMany({
-      where: { assignedToId: userId },
+      where: { assignedToId: userId, studentId: null },
       orderBy: { createdAt: 'desc' },
     });
   }

@@ -121,4 +121,58 @@ export class VaultService {
     this.logger.log(`Student ${studentId} uploaded ${type} to vault.`);
     return document;
   }
+
+  async getDocumentsByApplication(applicationId: string) {
+    return this.prisma.document.findMany({
+      where: { applicationId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async verifyDocument(documentId: string, staffId: string) {
+    const document = await this.prisma.document.update({
+      where: { id: documentId },
+      data: {
+        status: DocumentStatus.VERIFIED,
+        verifiedById: staffId,
+        rejectionNote: null,
+      },
+    });
+
+    const pendingCount = await this.prisma.document.count({
+      where: {
+        applicationId: document.applicationId,
+        status: {
+          in: [DocumentStatus.PENDING, DocumentStatus.REJECTED],
+        },
+      },
+    });
+
+    if (pendingCount === 0) {
+      await this.prisma.application.update({
+        where: { id: document.applicationId },
+        data: { stage: ApplicationStage.SCHOOL_APPLYING },
+      });
+      this.logger.log(
+        `Application ${document.applicationId} automatically advanced to SCHOOL_APPLYING.`,
+      );
+    }
+
+    this.logger.log(`Document ${documentId} verified by staff ${staffId}`);
+    return document;
+  }
+
+  async rejectDocument(documentId: string, staffId: string, reason: string) {
+    const document = await this.prisma.document.update({
+      where: { id: documentId },
+      data: {
+        status: DocumentStatus.REJECTED,
+        verifiedById: staffId,
+        rejectionNote: reason,
+      },
+    });
+
+    this.logger.log(`Document ${documentId} rejected by staff ${staffId}`);
+    return document;
+  }
 }
