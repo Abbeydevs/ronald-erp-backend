@@ -10,7 +10,6 @@ export class AttendanceService {
   constructor(private readonly prisma: PrismaService) {}
 
   async clockIn(userId: string, dto: ClockInDto) {
-    // Single open-shift check — no date-boundary math, no ambiguity.
     const activeShift = await this.prisma.attendance.findFirst({
       where: { userId, clockOut: null },
     });
@@ -27,7 +26,7 @@ export class AttendanceService {
 
     let branchId: string | null = null;
 
-    if (!isAfterHours) {
+    if (isAfterHours) {
       if (!dto.latitude || !dto.longitude) {
         throw new BadRequestException(
           'Out of Bounds: Location is required during standard office hours.',
