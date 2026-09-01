@@ -60,7 +60,7 @@ export class PipelineService {
         data: {
           leadId: lead.id,
           counsellorId: counsellorId,
-          stage: ApplicationStage.DOCUMENT_GATHERING,
+          stage: ApplicationStage.CONSULTATION_AND_DOCUMENTS,
         },
       });
 

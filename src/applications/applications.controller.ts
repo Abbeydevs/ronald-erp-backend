@@ -19,6 +19,7 @@ import { Role } from '@prisma/client';
 import * as express from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SubmitProofOfWorkDto } from './dto/submit-proof-of-work.dto';
+import { ToggleTaskDto } from './dto/toggle-task.dto';
 
 interface RequestWithUser extends express.Request {
   user: {
@@ -83,5 +84,16 @@ export class ApplicationsController {
       dto,
       file,
     );
+  }
+
+  @Patch('tasks/:taskId/toggle')
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.COMPLIANCE_HR,
+    Role.ADMISSIONS_COUNSELLOR,
+    Role.VISA_OFFICER,
+  )
+  toggleTask(@Param('taskId') taskId: string, @Body() dto: ToggleTaskDto) {
+    return this.applicationsService.toggleTaskStatus(taskId, dto.isCompleted);
   }
 }

@@ -111,10 +111,10 @@ export class VaultService {
       },
     });
 
-    if (application.stage === ApplicationStage.DOCUMENT_GATHERING) {
+    if (application.stage === ApplicationStage.CONSULTATION_AND_DOCUMENTS) {
       await this.prisma.application.update({
         where: { id: application.id },
-        data: { stage: ApplicationStage.DOCUMENT_REVIEW },
+        data: { stage: ApplicationStage.COMPLIANCE_REVIEW },
       });
     }
 
