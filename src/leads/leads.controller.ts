@@ -96,4 +96,19 @@ export class LeadsController {
   async getLeadById(@Param('id') id: string) {
     return this.leadsService.getLeadById(id);
   }
+
+  @Patch(':id/target')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  updateTarget(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      finalInstitution?: string;
+      countryChoice?: string;
+      courseOfStudy?: string;
+    },
+  ) {
+    return this.leadsService.updateTargetDetails(id, body);
+  }
 }

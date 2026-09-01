@@ -226,4 +226,27 @@ export class LeadsService {
 
     return lead;
   }
+
+  async updateTargetDetails(
+    id: string,
+    dto: {
+      finalInstitution?: string;
+      countryChoice?: string;
+      courseOfStudy?: string;
+    },
+  ) {
+    const lead = await this.prisma.lead.findUnique({ where: { id } });
+    if (!lead) {
+      throw new NotFoundException(`Lead ${id} not found`);
+    }
+
+    return this.prisma.lead.update({
+      where: { id },
+      data: {
+        finalInstitution: dto.finalInstitution,
+        countryChoice: dto.countryChoice,
+        courseOfStudy: dto.courseOfStudy,
+      },
+    });
+  }
 }

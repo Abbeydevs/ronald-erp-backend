@@ -1,4 +1,15 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateLeadDto } from './create-lead.dto';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
-export class UpdateLeadDto extends PartialType(CreateLeadDto) {}
+export class UpdateLeadTargetDto {
+  @IsString()
+  @IsNotEmpty()
+  finalInstitution!: string;
+
+  @IsString()
+  @IsOptional()
+  countryChoice?: string;
+
+  @IsString()
+  @IsOptional()
+  courseOfStudy?: string;
+}
