@@ -37,6 +37,10 @@ export class CreateLeadDto {
   @IsEnum(LeadSource)
   @IsOptional()
   source?: LeadSource;
+
+  @IsString()
+  @IsOptional()
+  referredById?: string;
 }
 
 export class BulkAssignDto {

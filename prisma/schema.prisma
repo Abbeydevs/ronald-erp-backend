@@ -9,15 +9,14 @@ datasource db {
 }
 
 enum ApplicationStage {
-  DOCUMENT_GATHERING
-  DOCUMENT_REVIEW
+  CONSULTATION_AND_DOCUMENTS
+  COMPLIANCE_REVIEW
   SCHOOL_APPLYING
-  SCHOOL_DECISION_PENDING
-  FINANCE_INVOICING
-  FINANCE_VERIFYING
+  OFFER_AND_CONDITIONS
+  INTERVIEW_CLEARANCE
+  CAS_AND_MEDICALS
   VISA_PREPARATION
   VISA_DECISION_PENDING
-  TRAVEL_READY
 }
 
 enum CommType {
@@ -57,6 +56,8 @@ enum LeadSource {
   WEBSITE
   WALK_IN
   MANUAL
+  STAFF
+  REFERRAL
 }
 
 enum LeadStatus {
@@ -94,7 +95,7 @@ model Application {
   leadId String
   lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
-  stage ApplicationStage @default(DOCUMENT_GATHERING)
+  stage ApplicationStage @default(CONSULTATION_AND_DOCUMENTS)
 
   counsellorId String?
   counsellor   User?   @relation("ApplicationCounsellor", fields: [counsellorId], references: [id])
@@ -105,11 +106,28 @@ model Application {
 
   documents Document[]
   proofs    ProofOfWork[]
+  tasks     ApplicationTask[]
+  reminders Reminder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("applications")
+}
+
+model ApplicationTask {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  title       String
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("application_tasks")
 }
 
 model Attendance {
@@ -254,14 +272,16 @@ model Invitation {
 }
 
 model Lead {
-  id            String  @id @default(uuid())
-  firstName     String
-  lastName      String
-  email         String?
-  phone         String?
-  countryChoice String?
-  budget        String?
-  courseOfStudy String?
+  id               String  @id @default(uuid())
+  firstName        String
+  lastName         String
+  email            String?
+  phone            String?
+  countryChoice    String?
+  budget           String?
+  courseOfStudy    String?
+  finalInstitution String?
+  counsellorNotes  String? @db.Text
 
   source   LeadSource   @default(MANUAL)
   status   LeadStatus   @default(UNASSIGNED)
@@ -273,6 +293,9 @@ model Lead {
 
   assignedToId String?
   assignedTo   User?   @relation("AssignedLeads", fields: [assignedToId], references: [id])
+
+  referredById String?
+  referredBy   User?   @relation("ReferredLeads", fields: [referredById], references: [id])
 
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -300,6 +323,25 @@ model ProofOfWork {
   @@map("proofs_of_work")
 }
 
+model Reminder {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  stage     ApplicationStage?
+  note      String            @db.Text
+  dueDate   DateTime          @db.Date
+  isRead    Boolean           @default(false)
+  isEmailed Boolean           @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reminders")
+}
+
 model User {
   id       String  @id @default(uuid())
   name     String
@@ -322,7 +364,9 @@ model User {
   idleAlerts         IdleAlert[]
   dailyReports       DailyReport[]
   assignedLeads      Lead[]              @relation("AssignedLeads")
+  referredLeads      Lead[]              @relation("ReferredLeads")
   communicationLogs  CommunicationLog[]
+  reminders          Reminder[]
 
   studentProfile          Lead?         @relation("StudentProfile")
   counsellingApplications Application[] @relation("ApplicationCounsellor")

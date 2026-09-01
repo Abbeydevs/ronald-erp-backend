@@ -39,6 +39,10 @@ export class LeadsService {
     if (dto.source === LeadSource.WALK_IN || dto.source === LeadSource.FACEBOOK)
       score += 10;
 
+    // Give a slight bump for internal staff referrals
+    if (dto.source === LeadSource.STAFF || dto.source === LeadSource.REFERRAL)
+      score += 15;
+
     if (score >= 60) return LeadPriority.HOT;
     if (score >= 30) return LeadPriority.WARM;
     return LeadPriority.COLD;
@@ -88,6 +92,7 @@ export class LeadsService {
       orderBy: { createdAt: 'desc' },
       include: {
         assignedTo: { select: { name: true } },
+        referredBy: { select: { name: true } },
       },
     });
   }
@@ -96,6 +101,9 @@ export class LeadsService {
     return this.prisma.lead.findMany({
       where: { status: LeadStatus.UNASSIGNED, studentId: null },
       orderBy: { createdAt: 'desc' },
+      include: {
+        referredBy: { select: { name: true } },
+      },
     });
   }
 
@@ -103,6 +111,9 @@ export class LeadsService {
     return this.prisma.lead.findMany({
       where: { assignedToId: userId, studentId: null },
       orderBy: { createdAt: 'desc' },
+      include: {
+        referredBy: { select: { name: true } },
+      },
     });
   }
 
@@ -205,6 +216,7 @@ export class LeadsService {
       where: { id },
       include: {
         assignedTo: { select: { name: true } },
+        referredBy: { select: { name: true } },
       },
     });
 

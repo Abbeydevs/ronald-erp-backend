@@ -18,6 +18,7 @@ import { join } from 'path';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { VaultModule } from './vault/vault.module';
 import { ApplicationsModule } from './applications/applications.module';
+import { RemindersModule } from './reminders/reminders.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ApplicationsModule } from './applications/applications.module';
     PipelineModule,
     VaultModule,
     ApplicationsModule,
+    RemindersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
