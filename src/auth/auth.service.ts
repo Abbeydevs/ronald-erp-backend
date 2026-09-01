@@ -77,30 +77,36 @@ export class AuthService {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(dto.password, saltRounds);
 
-    await this.prisma.$transaction(async (prisma) => {
-      const user = await prisma.user.create({
-        data: {
-          name: dto.name,
-          email: invitation.email,
-          hash: hashedPassword,
-          role: invitation.role,
-          deviceFingerprints: {
-            create: {
-              fingerprintHash: dto.fingerprintHash,
-              ipAddress,
-              userAgent,
+    await this.prisma.$transaction(
+      async (prisma) => {
+        const user = await prisma.user.create({
+          data: {
+            name: dto.name,
+            email: invitation.email,
+            hash: hashedPassword,
+            role: invitation.role,
+            deviceFingerprints: {
+              create: {
+                fingerprintHash: dto.fingerprintHash,
+                ipAddress,
+                userAgent,
+              },
             },
           },
-        },
-      });
+        });
 
-      await prisma.invitation.update({
-        where: { id: invitation.id },
-        data: { isUsed: true },
-      });
+        await prisma.invitation.update({
+          where: { id: invitation.id },
+          data: { isUsed: true },
+        });
 
-      return user;
-    });
+        return user;
+      },
+      {
+        maxWait: 10000,
+        timeout: 20000,
+      },
+    );
 
     return { message: 'Staff registration successful. You can now log in.' };
   }

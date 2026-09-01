@@ -233,4 +233,46 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendReminderEmail(
+    staffName: string,
+    email: string,
+    reminderTitle: string,
+    studentName: string,
+    targetStage?: string,
+  ): Promise<boolean> {
+    try {
+      const stageHtml = targetStage
+        ? `<p style="color: #64748b; font-size: 13px; margin-top: 4px;"><strong>Target Stage:</strong> ${targetStage.replace(/_/g, ' ')}</p>`
+        : '';
+
+      const { error } = await this.resend.emails.send({
+        from: 'Ronald Partners CRM <onboarding@thesoftwarehub.tech>',
+        to: email,
+        subject: `Reminder: ${reminderTitle}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #0fa3b1; margin-top: 0;">Task Reminder</h2>
+            <p>Hi <strong>${staffName}</strong>,</p>
+            <p>This is your scheduled reminder:</p>
+            <div style="background-color: #f8fafc; padding: 16px; border-left: 4px solid #0fa3b1; margin: 16px 0; font-size: 16px;">
+              <strong>${reminderTitle}</strong><br/>
+              <span style="color: #64748b; font-size: 14px;">Student: ${studentName}</span>
+              ${stageHtml}
+            </div>
+            <p>Please log in to the Ronald Partners CRM to action this task.</p>
+          </div>
+        `,
+      });
+
+      if (error) {
+        this.logger.error(`Resend Reminder Error: ${error.message}`, error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to dispatch reminder to ${email}`, error);
+      return false;
+    }
+  }
 }
