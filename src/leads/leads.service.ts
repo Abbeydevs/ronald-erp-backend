@@ -249,4 +249,16 @@ export class LeadsService {
       },
     });
   }
+
+  async updateCounsellorNotes(id: string, notes: string) {
+    const lead = await this.prisma.lead.findUnique({ where: { id } });
+    if (!lead) {
+      throw new NotFoundException(`Lead ${id} not found`);
+    }
+
+    return this.prisma.lead.update({
+      where: { id },
+      data: { counsellorNotes: notes },
+    });
+  }
 }

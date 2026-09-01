@@ -111,4 +111,11 @@ export class LeadsController {
   ) {
     return this.leadsService.updateTargetDetails(id, body);
   }
+
+  @Patch(':id/notes')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  // @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  updateNotes(@Param('id') id: string, @Body() body: { notes: string }) {
+    return this.leadsService.updateCounsellorNotes(id, body.notes);
+  }
 }
