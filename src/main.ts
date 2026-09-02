@@ -14,6 +14,7 @@ async function bootstrap(): Promise<void> {
         !origin ||
         origin.startsWith('http://localhost:') ||
         origin.startsWith('https://localhost:') ||
+        origin.startsWith('https://crm.ronaldpartners.com') ||
         origin.includes('.loca.lt') ||
         origin.includes('vercel.app')
       ) {
