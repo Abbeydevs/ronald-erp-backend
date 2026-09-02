@@ -18,9 +18,15 @@ export class AdminAttendanceController {
 
   @Get('history')
   async getComprehensiveAttendance(@Query('date') date: string) {
-    const queryDate = date
-      ? new Date(date).toISOString()
-      : new Date().toISOString();
+    let queryDate = date;
+    if (!queryDate || queryDate === 'undefined' || queryDate === 'null') {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      queryDate = `${y}-${m}-${d}`;
+    }
+
     const data =
       await this.attendanceService.getComprehensiveAttendance(queryDate);
     return { success: true, data };

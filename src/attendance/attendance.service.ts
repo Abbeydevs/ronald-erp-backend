@@ -408,27 +408,93 @@ export class AttendanceService {
   }
 
   async getComprehensiveAttendance(
-    dateString: string,
+    dateFilterStr: string,
   ): Promise<ComprehensiveAttendanceRecord[]> {
-    const queryDate = new Date(dateString);
-    queryDate.setHours(0, 0, 0, 0);
+    const isAllTime = dateFilterStr === 'all';
 
-    const nextDay = new Date(queryDate);
-    nextDay.setDate(nextDay.getDate() + 1);
+    let queryDateStart: Date | undefined;
+    let queryDateEnd: Date | undefined;
+
+    if (!isAllTime) {
+      const parts = dateFilterStr.split('-');
+      const year = Number(parts[0]) || new Date().getFullYear();
+      const month = Number(parts[1]) || new Date().getMonth() + 1;
+      const day = Number(parts[2]) || new Date().getDate();
+
+      queryDateStart = new Date();
+      queryDateStart.setFullYear(year, month - 1, day);
+      queryDateStart.setHours(0, 0, 0, 0);
+
+      queryDateEnd = new Date(queryDateStart);
+      queryDateEnd.setHours(23, 59, 59, 999);
+    }
+
+    const attendances = await this.prisma.attendance.findMany({
+      where: isAllTime
+        ? undefined
+        : {
+            date: {
+              gte: queryDateStart,
+              lte: queryDateEnd,
+            },
+          },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            workMode: true,
+            remoteDays: true,
+          },
+        },
+        branch: true,
+      },
+      orderBy: { clockIn: 'desc' },
+    });
+
+    if (isAllTime) {
+      return attendances.map((record) => {
+        const openingTime = record.branch?.openingTime || '09:00';
+        const closingTime = record.branch?.closingTime || '17:00';
+        const branchName = record.branch?.name || 'Unassigned';
+
+        const status = this.calculateStatus(
+          record.clockIn,
+          openingTime,
+          closingTime,
+          record.user.workMode,
+          record.user.remoteDays,
+        );
+
+        const exactDate = record.date.toISOString().split('T')[0];
+
+        return {
+          userId: record.userId,
+          userName: record.user.name,
+          role: record.user.role,
+          branchName,
+          workMode: record.user.workMode,
+          date: exactDate,
+          clockInTime: record.clockIn,
+          clockOutTime: record.clockOut,
+          status,
+        };
+      });
+    }
 
     const allStaff = await this.prisma.user.findMany({
       where: { isActive: true, role: { not: Role.STUDENT } },
       include: { branch: true },
     });
 
-    const attendances = await this.prisma.attendance.findMany({
-      where: {
-        date: {
-          gte: queryDate,
-          lt: nextDay,
-        },
-      },
+    const watNowString = new Date().toLocaleString('en-US', {
+      timeZone: 'Africa/Lagos',
     });
+    const watNow = new Date(watNowString);
+    watNow.setHours(0, 0, 0, 0);
+
+    const isPastDate = queryDateStart! < watNow;
 
     return allStaff.map((staff) => {
       const record = attendances.find((a) => a.userId === staff.id);
@@ -439,10 +505,7 @@ export class AttendanceService {
 
       let status: AttendanceStatus;
 
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
-      if (!record && queryDate < todayStart) {
+      if (!record && isPastDate) {
         if (
           staff.workMode === WorkMode.REMOTE ||
           (staff.workMode === WorkMode.HYBRID &&
@@ -468,7 +531,7 @@ export class AttendanceService {
         role: staff.role,
         branchName,
         workMode: staff.workMode,
-        date: dateString,
+        date: dateFilterStr,
         clockInTime: record ? record.clockIn : null,
         clockOutTime: record ? record.clockOut : null,
         status,
