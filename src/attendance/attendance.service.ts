@@ -9,6 +9,37 @@ import { ClockInDto } from './dto/clock-in.dto';
 import { Cron } from '@nestjs/schedule';
 import { DayOfWeek } from '@prisma/client';
 import * as crypto from 'crypto';
+import { WorkMode, Role } from '@prisma/client';
+
+export type AttendanceStatus =
+  | 'ON_TIME'
+  | 'LATE'
+  | 'WORKING_REMOTELY'
+  | 'PENDING'
+  | 'LATE_NOT_CLOCKED_IN'
+  | 'ABSENT';
+
+export interface LiveAttendanceRecord {
+  attendanceId: string;
+  userId: string;
+  userName: string;
+  role: Role;
+  branchName: string;
+  clockInTime: Date;
+  status: AttendanceStatus;
+}
+
+export interface ComprehensiveAttendanceRecord {
+  userId: string;
+  userName: string;
+  role: Role;
+  branchName: string;
+  workMode: WorkMode;
+  date: string;
+  clockInTime: Date | null;
+  clockOutTime: Date | null;
+  status: AttendanceStatus;
+}
 
 @Injectable()
 export class AttendanceService {
@@ -258,5 +289,190 @@ export class AttendanceService {
     } catch (error) {
       this.logger.error('Failed to execute midnight sweep', error);
     }
+  }
+
+  private isRemoteDay(remoteDays: DayOfWeek[]): boolean {
+    const watDate = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Africa/Lagos' }),
+    );
+    const dayNames: DayOfWeek[] = [
+      'SUNDAY',
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+    ];
+    const today = dayNames[watDate.getDay()];
+    return remoteDays.includes(today);
+  }
+
+  private calculateStatus(
+    clockInTime: Date | null,
+    branchOpeningTime: string,
+    branchClosingTime: string,
+    workMode: WorkMode,
+    remoteDays: DayOfWeek[],
+  ): AttendanceStatus {
+    if (
+      workMode === WorkMode.REMOTE ||
+      (workMode === WorkMode.HYBRID && this.isRemoteDay(remoteDays))
+    ) {
+      return 'WORKING_REMOTELY';
+    }
+
+    const watNowString = new Date().toLocaleString('en-US', {
+      timeZone: 'Africa/Lagos',
+    });
+    const watNow = new Date(watNowString);
+    const currentHour = watNow.getHours();
+    const currentMinute = watNow.getMinutes();
+
+    const [openHour, openMinute] = branchOpeningTime.split(':').map(Number);
+    const [closeHour, closeMinute] = branchClosingTime.split(':').map(Number);
+
+    if (clockInTime) {
+      const clockInWat = new Date(
+        clockInTime.toLocaleString('en-US', { timeZone: 'Africa/Lagos' }),
+      );
+      const inHour = clockInWat.getHours();
+      const inMinute = clockInWat.getMinutes();
+
+      if (
+        inHour < openHour ||
+        (inHour === openHour && inMinute <= openMinute)
+      ) {
+        return 'ON_TIME';
+      }
+      return 'LATE';
+    }
+
+    const isPastOpening =
+      currentHour > openHour ||
+      (currentHour === openHour && currentMinute > openMinute);
+    const isPastClosing =
+      currentHour > closeHour ||
+      (currentHour === closeHour && currentMinute >= closeMinute);
+
+    if (isPastClosing) return 'ABSENT';
+    if (isPastOpening) return 'LATE_NOT_CLOCKED_IN';
+
+    return 'PENDING';
+  }
+
+  async getLiveAttendance(): Promise<LiveAttendanceRecord[]> {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const attendances = await this.prisma.attendance.findMany({
+      where: { date: { gte: todayStart } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            workMode: true,
+            remoteDays: true,
+          },
+        },
+        branch: true,
+      },
+      orderBy: { clockIn: 'desc' },
+    });
+
+    return attendances.map((record) => {
+      const openingTime = record.branch?.openingTime || '09:00';
+      const closingTime = record.branch?.closingTime || '17:00';
+      const branchName = record.branch?.name || 'Unassigned';
+
+      const status = this.calculateStatus(
+        record.clockIn,
+        openingTime,
+        closingTime,
+        record.user.workMode,
+        record.user.remoteDays,
+      );
+
+      return {
+        attendanceId: record.id,
+        userId: record.user.id,
+        userName: record.user.name,
+        role: record.user.role,
+        branchName,
+        clockInTime: record.clockIn,
+        status,
+      };
+    });
+  }
+
+  async getComprehensiveAttendance(
+    dateString: string,
+  ): Promise<ComprehensiveAttendanceRecord[]> {
+    const queryDate = new Date(dateString);
+    queryDate.setHours(0, 0, 0, 0);
+
+    const nextDay = new Date(queryDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const allStaff = await this.prisma.user.findMany({
+      where: { isActive: true, role: { not: Role.STUDENT } },
+      include: { branch: true },
+    });
+
+    const attendances = await this.prisma.attendance.findMany({
+      where: {
+        date: {
+          gte: queryDate,
+          lt: nextDay,
+        },
+      },
+    });
+
+    return allStaff.map((staff) => {
+      const record = attendances.find((a) => a.userId === staff.id);
+
+      const openingTime = staff.branch?.openingTime || '09:00';
+      const closingTime = staff.branch?.closingTime || '17:00';
+      const branchName = staff.branch?.name || 'Unassigned';
+
+      let status: AttendanceStatus;
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      if (!record && queryDate < todayStart) {
+        if (
+          staff.workMode === WorkMode.REMOTE ||
+          (staff.workMode === WorkMode.HYBRID &&
+            this.isRemoteDay(staff.remoteDays))
+        ) {
+          status = 'WORKING_REMOTELY';
+        } else {
+          status = 'ABSENT';
+        }
+      } else {
+        status = this.calculateStatus(
+          record ? record.clockIn : null,
+          openingTime,
+          closingTime,
+          staff.workMode,
+          staff.remoteDays,
+        );
+      }
+
+      return {
+        userId: staff.id,
+        userName: staff.name,
+        role: staff.role,
+        branchName,
+        workMode: staff.workMode,
+        date: dateString,
+        clockInTime: record ? record.clockIn : null,
+        clockOutTime: record ? record.clockOut : null,
+        status,
+      };
+    });
   }
 }
