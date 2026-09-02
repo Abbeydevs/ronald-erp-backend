@@ -262,6 +262,10 @@ model Invitation {
   expiresAt DateTime
   isUsed    Boolean  @default(false)
 
+  workMode   WorkMode    @default(ONSITE)
+  branchId   String?
+  remoteDays DayOfWeek[]
+
   generatedById String
   generatedBy   User   @relation("AdminInvites", fields: [generatedById], references: [id])
 

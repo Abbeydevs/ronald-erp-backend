@@ -51,4 +51,21 @@ export class AttendanceController {
     await this.attendanceService.clockOut(req.user.id);
     return { success: true, message: 'Shift closed successfully.' };
   }
+
+  @Get('qr-token')
+  @UseGuards(AuthGuard('jwt'))
+  getQrToken(@Req() req: AuthenticatedRequest) {
+    const token = this.attendanceService.generateQrToken(req.user.id);
+    return { success: true, token };
+  }
+
+  @Post('qr-verify')
+  async verifyQrClockIn(@Body() dto: ClockInDto & { token: string }) {
+    const record = await this.attendanceService.qrClockIn(dto.token, dto);
+    return {
+      success: true,
+      message: 'Mobile verification successful.',
+      data: record,
+    };
+  }
 }

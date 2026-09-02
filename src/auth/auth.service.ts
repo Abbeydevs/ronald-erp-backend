@@ -44,6 +44,9 @@ export class AuthService {
         token: rawToken,
         expiresAt,
         generatedById: adminId,
+        workMode: dto.workMode || 'ONSITE',
+        branchId: dto.branchId || null,
+        remoteDays: dto.remoteDays || [],
       },
     });
 
@@ -85,6 +88,9 @@ export class AuthService {
             email: invitation.email,
             hash: hashedPassword,
             role: invitation.role,
+            workMode: invitation.workMode,
+            branchId: invitation.branchId,
+            remoteDays: invitation.remoteDays,
             deviceFingerprints: {
               create: {
                 fingerprintHash: dto.fingerprintHash,
