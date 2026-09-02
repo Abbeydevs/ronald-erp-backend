@@ -3,7 +3,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
-import { HrAttendanceModule } from './hr-attendance/hr-attendance.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EmailModule } from './email/email.module';
 import { BranchModule } from './branch/branch.module';
@@ -19,6 +18,7 @@ import { PipelineModule } from './pipeline/pipeline.module';
 import { VaultModule } from './vault/vault.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { RemindersModule } from './reminders/reminders.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -29,7 +29,6 @@ import { RemindersModule } from './reminders/reminders.module';
     }),
     PrismaModule,
     AuthModule,
-    HrAttendanceModule,
     EmailModule,
     BranchModule,
     AttendanceModule,
@@ -42,6 +41,7 @@ import { RemindersModule } from './reminders/reminders.module';
     VaultModule,
     ApplicationsModule,
     RemindersModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -19,8 +19,15 @@ export class AttendanceService {
   constructor(private readonly prisma: PrismaService) {}
 
   async clockIn(userId: string, dto: ClockInDto) {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
     const activeShift = await this.prisma.attendance.findFirst({
-      where: { userId, clockOut: null },
+      where: {
+        userId,
+        date: { gte: startOfDay },
+        clockOut: null,
+      },
     });
 
     if (activeShift) {
@@ -37,26 +44,32 @@ export class AttendanceService {
     if (!user) throw new BadRequestException('User not found.');
 
     let requiresGps = true;
+    let isOvertime = false;
 
-    if (user.workMode === 'REMOTE') {
+    if (user.branch && this.isAfterClosingTime(user.branch.closingTime)) {
+      isOvertime = true;
       requiresGps = false;
-    } else if (user.workMode === 'HYBRID') {
-      const watDate = new Date(
-        new Date().toLocaleString('en-US', { timeZone: 'Africa/Lagos' }),
-      );
-      const dayNames = [
-        'SUNDAY',
-        'MONDAY',
-        'TUESDAY',
-        'WEDNESDAY',
-        'THURSDAY',
-        'FRIDAY',
-        'SATURDAY',
-      ];
-      const today = dayNames[watDate.getDay()] as DayOfWeek;
-
-      if (user.remoteDays.includes(today)) {
+    } else {
+      if (user.workMode === 'REMOTE') {
         requiresGps = false;
+      } else if (user.workMode === 'HYBRID') {
+        const watDate = new Date(
+          new Date().toLocaleString('en-US', { timeZone: 'Africa/Lagos' }),
+        );
+        const dayNames = [
+          'SUNDAY',
+          'MONDAY',
+          'TUESDAY',
+          'WEDNESDAY',
+          'THURSDAY',
+          'FRIDAY',
+          'SATURDAY',
+        ];
+        const today = dayNames[watDate.getDay()] as DayOfWeek;
+
+        if (user.remoteDays.includes(today)) {
+          requiresGps = false;
+        }
       }
     }
 
@@ -93,11 +106,12 @@ export class AttendanceService {
         date: new Date(),
         clockInLat: dto.latitude || null,
         clockInLng: dto.longitude || null,
+        isOvertime,
       },
     });
 
     this.logger.log(
-      `User ${userId} clocked in successfully. WorkMode: ${user.workMode}. Requires GPS: ${requiresGps}`,
+      `User ${userId} clocked in successfully. Overtime: ${isOvertime}. Requires GPS: ${requiresGps}`,
     );
     return attendance;
   }
@@ -166,9 +180,24 @@ export class AttendanceService {
     return R * c;
   }
 
+  private isAfterClosingTime(closingTime: string): boolean {
+    const now = new Date();
+    const [hours, minutes] = closingTime.split(':').map(Number);
+    const closingDate = new Date();
+    closingDate.setHours(hours, minutes, 0, 0);
+    return now > closingDate;
+  }
+
   async getTodayStatus(userId: string) {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
     const record = await this.prisma.attendance.findFirst({
-      where: { userId, clockOut: null },
+      where: {
+        userId,
+        date: { gte: startOfDay },
+        clockOut: null,
+      },
       orderBy: { clockIn: 'desc' },
     });
 
@@ -181,8 +210,15 @@ export class AttendanceService {
   }
 
   async clockOut(userId: string) {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
     const record = await this.prisma.attendance.findFirst({
-      where: { userId, clockOut: null },
+      where: {
+        userId,
+        date: { gte: startOfDay },
+        clockOut: null,
+      },
       orderBy: { clockIn: 'desc' },
     });
 
@@ -196,19 +232,31 @@ export class AttendanceService {
     });
   }
 
-  @Cron('0 17,0 * * *', { timeZone: 'Africa/Lagos' })
-  async handleAutoClockOut() {
-    this.logger.log('Initiating automated shift closer...');
+  @Cron('0 18 * * *', { timeZone: 'Africa/Lagos' })
+  async handleEveningSweep() {
+    this.logger.log('Executing 6:00 PM Work-Life Balance Sweep...');
+    try {
+      const result = await this.prisma.attendance.updateMany({
+        where: { clockOut: null, isOvertime: false },
+        data: { clockOut: new Date(), isAutoClosed: true },
+      });
+      this.logger.log(`Auto-closed ${result.count} standard shifts.`);
+    } catch (error) {
+      this.logger.error('Failed to execute evening sweep', error);
+    }
+  }
+
+  @Cron('0 0 * * *', { timeZone: 'Africa/Lagos' })
+  async handleMidnightSweep() {
+    this.logger.log('Executing 12:00 AM Midnight Sweep...');
     try {
       const result = await this.prisma.attendance.updateMany({
         where: { clockOut: null },
         data: { clockOut: new Date(), isAutoClosed: true },
       });
-      this.logger.log(
-        `Automated shift closer completed. Auto-closed ${result.count} active shifts.`,
-      );
+      this.logger.log(`Auto-closed ${result.count} overtime shifts.`);
     } catch (error) {
-      this.logger.error('Failed to execute automated shift closer', error);
+      this.logger.error('Failed to execute midnight sweep', error);
     }
   }
 }
