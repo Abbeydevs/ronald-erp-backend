@@ -14,7 +14,10 @@ import { memoryStorage } from 'multer';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { Role } from '@prisma/client';
-import { CommunicationService } from './communication.service';
+import {
+  CommunicationService,
+  ResendInboundEmailPayload,
+} from './communication.service';
 import { ScheduleMeetDto, SendEmailDto } from './dto';
 
 interface RequestWithUser extends Express.Request {
@@ -25,11 +28,11 @@ interface RequestWithUser extends Express.Request {
 }
 
 @Controller('communication')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class CommunicationController {
   constructor(private readonly commService: CommunicationService) {}
 
   @Post('calls/save-stream')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -58,6 +61,7 @@ export class CommunicationController {
   }
 
   @Post('schedule/meet')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
   async scheduleMeet(
     @Body() dto: ScheduleMeetDto,
@@ -67,20 +71,29 @@ export class CommunicationController {
   }
 
   @Post('send-email')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
   async sendEmail(@Body() dto: SendEmailDto, @Req() req: RequestWithUser) {
     return this.commService.sendEmailToStudent(dto, req.user.id);
   }
 
   @Get('timeline/:leadId')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
   async getLeadTimeline(@Param('leadId') leadId: string) {
     return this.commService.getLogsForLead(leadId);
   }
 
   @Get('logs/:leadId')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
   async getLeadLogs(@Param('leadId') leadId: string) {
     return this.commService.getLogsForLead(leadId);
+  }
+
+  @Post('webhook/inbound')
+  async receiveInboundEmail(@Body() payload: ResendInboundEmailPayload) {
+    await this.commService.handleInboundEmailWebhook(payload);
+    return { success: true };
   }
 }

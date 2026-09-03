@@ -17,7 +17,7 @@ export class EmailService {
   ): Promise<boolean> {
     try {
       const { data, error } = await this.resend.emails.send({
-        from: 'Ronald Partners <onboarding@thesoftwarehub.tech>',
+        from: 'Ronald Partners <onboarding@ronaldpartners.com>',
         to: email,
         subject: 'Secure Access Provisioned: Ronald Partners Portal',
         html: `
@@ -54,7 +54,7 @@ export class EmailService {
   async sendIdleAlertEmail(name: string, email: string): Promise<boolean> {
     try {
       const { data, error } = await this.resend.emails.send({
-        from: 'Ronald Partners <onboarding@thesoftwarehub.tech>',
+        from: 'Ronald Partners <onboarding@ronaldpartners.com>',
         to: 'ayomidbankole@gmail.com',
         subject: `Security Alert: Idle Session Locked - ${name}`,
         html: `
@@ -93,11 +93,13 @@ export class EmailService {
     toEmail: string,
     subject: string,
     bodyHtml: string,
+    replyTo?: string,
   ): Promise<boolean> {
     try {
       const { data, error } = await this.resend.emails.send({
-        from: 'Ronald Partners <onboarding@thesoftwarehub.tech>',
+        from: 'Ronald Partners <onboarding@ronaldpartners.com>',
         to: toEmail,
+        replyTo: replyTo,
         subject,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
@@ -147,7 +149,7 @@ export class EmailService {
       });
 
       const { data, error } = await this.resend.emails.send({
-        from: 'Ronald Partners <onboarding@thesoftwarehub.tech>',
+        from: 'Ronald Partners <onboarding@ronaldpartners.com>',
         to: toEmail,
         subject: `Scheduled Consultation Invite - Ronald Partners`,
         html: `
@@ -196,7 +198,7 @@ export class EmailService {
   ): Promise<boolean> {
     try {
       const { data, error } = await this.resend.emails.send({
-        from: 'Ronald Partners Admissions <onboarding@thesoftwarehub.tech>',
+        from: 'Ronald Partners Admissions <onboarding@ronaldpartners.com>',
         to: email,
         subject: 'Welcome to Ronald Partners! Activate Your Student Portal',
         html: `
@@ -247,7 +249,7 @@ export class EmailService {
         : '';
 
       const { error } = await this.resend.emails.send({
-        from: 'Ronald Partners CRM <onboarding@thesoftwarehub.tech>',
+        from: 'Ronald Partners CRM <onboarding@ronaldpartners.com>',
         to: email,
         subject: `Reminder: ${reminderTitle}`,
         html: `

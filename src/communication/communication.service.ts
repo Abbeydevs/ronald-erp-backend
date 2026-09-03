@@ -13,6 +13,19 @@ import { GoogleCalendarService } from './google-calendar/google-calendar.service
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import * as streamifier from 'streamifier';
 
+export class ResendInboundEmailData {
+  to!: string[];
+  from!: string;
+  subject!: string;
+  text?: string;
+  html?: string;
+}
+
+export class ResendInboundEmailPayload {
+  type!: string;
+  data?: ResendInboundEmailData;
+}
+
 @Injectable()
 export class CommunicationService {
   private readonly logger = new Logger(CommunicationService.name);
@@ -167,10 +180,14 @@ export class CommunicationService {
       );
     }
 
+    // Generate the unique reply routing address for this specific lead
+    const replyToAddress = `reply+${lead.id}@replies.ronaldpartners.com`;
+
     const dispatched = await this.emailService.sendStudentEmail(
       lead.email,
       dto.subject,
       dto.content,
+      replyToAddress,
     );
 
     if (!dispatched) {
@@ -195,6 +212,62 @@ export class CommunicationService {
     });
 
     return log;
+  }
+
+  async handleInboundEmailWebhook(payload: ResendInboundEmailPayload) {
+    if (payload.type !== 'email.received' || !payload.data) {
+      return { received: true };
+    }
+
+    const emailData = payload.data;
+
+    if (!emailData.to || emailData.to.length === 0) {
+      return { received: true };
+    }
+
+    const toAddress = emailData.to[0];
+    const match = toAddress.match(/reply\+(.*?)@/);
+
+    if (!match) {
+      this.logger.warn(`Could not extract lead ID from address: ${toAddress}`);
+      return { received: true };
+    }
+
+    const leadId = match[1];
+
+    const lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
+    if (!lead) {
+      this.logger.warn(`Received email for unknown lead ID: ${leadId}`);
+      return { received: true };
+    }
+
+    let targetCounsellorId = lead.assignedToId;
+
+    if (!targetCounsellorId) {
+      const systemCounsellor = await this.prisma.user.findFirst();
+      if (!systemCounsellor) {
+        this.logger.error(
+          'Cannot log inbound email: No counsellor assigned and no system users exist.',
+        );
+        return { received: true };
+      }
+      targetCounsellorId = systemCounsellor.id;
+    }
+
+    await this.prisma.communicationLog.create({
+      data: {
+        leadId: lead.id,
+        counsellorId: targetCounsellorId,
+        type: CommType.EMAIL,
+        subject: emailData.subject.startsWith('Re:')
+          ? emailData.subject
+          : `Re: ${emailData.subject}`,
+        content: emailData.text || emailData.html || 'No content provided.',
+      },
+    });
+
+    this.logger.log(`Successfully logged inbound email for lead: ${leadId}`);
+    return { received: true };
   }
 
   async getLogsForLead(leadId: string) {
