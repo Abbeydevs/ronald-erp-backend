@@ -96,4 +96,16 @@ export class ApplicationsController {
   toggleTask(@Param('taskId') taskId: string, @Body() dto: ToggleTaskDto) {
     return this.applicationsService.toggleTaskStatus(taskId, dto.isCompleted);
   }
+
+  @Get(':id/proofs')
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.COMPLIANCE_HR,
+    Role.ADMISSIONS_COUNSELLOR,
+    Role.FINANCE_OFFICER,
+    Role.VISA_OFFICER,
+  )
+  getProofsOfWork(@Param('id') id: string) {
+    return this.applicationsService.getProofsOfWork(id);
+  }
 }

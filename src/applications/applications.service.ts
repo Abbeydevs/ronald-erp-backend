@@ -286,4 +286,21 @@ export class ApplicationsService {
       },
     });
   }
+
+  async getProofsOfWork(applicationId: string) {
+    const proofs = await this.prisma.proofOfWork.findMany({
+      where: { applicationId },
+      include: {
+        staff: {
+          select: { name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      success: true,
+      data: proofs,
+    };
+  }
 }
