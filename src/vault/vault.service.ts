@@ -102,14 +102,39 @@ export class VaultService {
       );
     }
 
-    const document = await this.prisma.document.create({
-      data: {
+    const existingDocument = await this.prisma.document.findFirst({
+      where: {
         applicationId: application.id,
-        type,
-        fileUrl,
-        status: DocumentStatus.PENDING,
+        type: type,
       },
     });
+
+    let document;
+
+    if (existingDocument) {
+      document = await this.prisma.document.update({
+        where: { id: existingDocument.id },
+        data: {
+          fileUrl,
+          status: DocumentStatus.PENDING,
+          rejectionNote: null,
+          verifiedById: null,
+        },
+      });
+      this.logger.log(
+        `Student ${studentId} replaced rejected ${type} document.`,
+      );
+    } else {
+      document = await this.prisma.document.create({
+        data: {
+          applicationId: application.id,
+          type,
+          fileUrl,
+          status: DocumentStatus.PENDING,
+        },
+      });
+      this.logger.log(`Student ${studentId} uploaded new ${type} to vault.`);
+    }
 
     if (application.stage === ApplicationStage.CONSULTATION_AND_DOCUMENTS) {
       await this.prisma.application.update({
@@ -118,7 +143,6 @@ export class VaultService {
       });
     }
 
-    this.logger.log(`Student ${studentId} uploaded ${type} to vault.`);
     return document;
   }
 
