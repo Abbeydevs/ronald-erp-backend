@@ -168,22 +168,6 @@ export class CommunicationService {
       );
     }
 
-    // Generate the unique reply routing address for this specific lead
-    const replyToAddress = `reply+${lead.id}@replies.ronaldpartners.com`;
-
-    const dispatched = await this.emailService.sendStudentEmail(
-      lead.email,
-      dto.subject,
-      dto.content,
-      replyToAddress,
-    );
-
-    if (!dispatched) {
-      throw new BadRequestException('Failed to dispatch email via Resend.');
-    }
-
-    const now = new Date();
-
     const log = await this.prisma.communicationLog.create({
       data: {
         leadId: dto.leadId,
@@ -194,9 +178,23 @@ export class CommunicationService {
       },
     });
 
+    const replyToAddress = `reply+${lead.id}.${log.id}@replies.ronaldpartners.com`;
+
+    const dispatched = await this.emailService.sendStudentEmail(
+      lead.email,
+      dto.subject,
+      dto.content,
+      replyToAddress,
+    );
+
+    if (!dispatched) {
+      await this.prisma.communicationLog.delete({ where: { id: log.id } });
+      throw new BadRequestException('Failed to dispatch email via Resend.');
+    }
+
     await this.prisma.lead.update({
       where: { id: dto.leadId },
-      data: { lastCommunicatedAt: now },
+      data: { lastCommunicatedAt: new Date() },
     });
 
     return log;
@@ -214,14 +212,23 @@ export class CommunicationService {
     }
 
     const toAddress = emailData.to[0];
-    const match = toAddress.match(/reply\+(.*?)@/);
 
-    if (!match) {
-      this.logger.warn(`Could not extract lead ID from address: ${toAddress}`);
-      return { received: true };
+    const match = toAddress.match(/reply\+(.*?)\.(.*?)@/);
+
+    let leadId: string;
+    let parentId: string | undefined = undefined;
+
+    if (match) {
+      leadId = match[1];
+      parentId = match[2];
+    } else {
+      const oldMatch = toAddress.match(/reply\+(.*?)@/);
+      if (!oldMatch) {
+        this.logger.warn(`Could not extract IDs from address: ${toAddress}`);
+        return { received: true };
+      }
+      leadId = oldMatch[1];
     }
-
-    const leadId = match[1];
 
     const lead = await this.prisma.lead.findUnique({ where: { id: leadId } });
     if (!lead) {
@@ -246,6 +253,7 @@ export class CommunicationService {
       data: {
         leadId: lead.id,
         counsellorId: targetCounsellorId,
+        parentId: parentId,
         type: CommType.EMAIL,
         subject: emailData.subject.startsWith('Re:')
           ? emailData.subject
@@ -254,7 +262,9 @@ export class CommunicationService {
       },
     });
 
-    this.logger.log(`Successfully logged inbound email for lead: ${leadId}`);
+    this.logger.log(
+      `Successfully logged threaded inbound email for lead: ${leadId}`,
+    );
     return { received: true };
   }
 

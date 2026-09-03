@@ -173,17 +173,20 @@ model Branch {
 }
 
 model CommunicationLog {
-  id           String    @id @default(uuid())
+  id           String             @id @default(uuid())
   leadId       String
   counsellorId String
   type         CommType
   duration     Int?
   subject      String?
-  content      String?   @db.Text
+  content      String?            @db.Text
   recordingUrl String?
   notes        String?
   meetUrl      String?
   scheduledAt  DateTime?
+  parentId     String?
+  parent       CommunicationLog?  @relation("EmailThread", fields: [parentId], references: [id])
+  replies      CommunicationLog[] @relation("EmailThread")
 
   createdAt DateTime @default(now())
 
