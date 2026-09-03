@@ -11,6 +11,7 @@ import { UpdateStageDto } from './dto/update-stage.dto';
 import { SubmitProofOfWorkDto } from './dto/submit-proof-of-work.dto';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import * as streamifier from 'streamifier';
+import { EmailService } from 'src/email/email.service';
 
 const STAGE_TASKS: Record<ApplicationStage, string[]> = {
   CONSULTATION_AND_DOCUMENTS: [
@@ -57,7 +58,10 @@ const STAGE_TASKS: Record<ApplicationStage, string[]> = {
 export class ApplicationsService {
   private readonly logger = new Logger(ApplicationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+  ) {}
 
   private async syncStageTasks(applicationId: string, stage: ApplicationStage) {
     const requiredTasks = STAGE_TASKS[stage] || [];
@@ -216,6 +220,42 @@ export class ApplicationsService {
     );
 
     await this.syncStageTasks(applicationId, dto.stage);
+
+    if (application.lead && application.lead.email) {
+      const studentName = application.lead.firstName || 'Student';
+      const formattedStage = dto.stage.replace(/_/g, ' ');
+
+      const emailSubject = `Application Update: Advanced to ${formattedStage}`;
+      const emailHtml = `
+        <p>Dear <strong>${studentName}</strong>,</p>
+        <p>Great news! Your university application has officially progressed to the next stage: <strong>${formattedStage}</strong>.</p>
+        
+        <div style="background-color: #f8fafc; padding: 16px; border-left: 4px solid #0fa3b1; margin: 16px 0;">
+          <p style="margin-top: 0;"><strong>Update Details:</strong></p>
+          <p style="margin-bottom: 0; color: #334155;">${dto.title}: ${dto.description}</p>
+        </div>
+
+        <p>You can view the official document/evidence for this update by clicking the secure link below:</p>
+        <a href="${proofUrl}" target="_blank" style="display:inline-block; margin: 10px 0; padding: 10px 20px; background-color: #0fa3b1; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold;">
+          View Uploaded Document
+        </a>
+        
+        <p style="margin-top: 20px;">If you have any questions, please reply to this email.</p>
+      `;
+
+      const replyToAddress = `reply+${application.lead.id}@replies.ronaldpartners.com`;
+
+      await this.emailService.sendStudentEmail(
+        application.lead.email,
+        emailSubject,
+        emailHtml,
+        replyToAddress,
+      );
+
+      this.logger.log(
+        `Proof of work email dispatched to ${application.lead.email}`,
+      );
+    }
 
     this.logger.log(
       `Proof of work logged for application ${applicationId}. Advanced to ${dto.stage}`,
