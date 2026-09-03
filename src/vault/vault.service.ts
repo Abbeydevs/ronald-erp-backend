@@ -199,4 +199,81 @@ export class VaultService {
     this.logger.log(`Document ${documentId} rejected by staff ${staffId}`);
     return document;
   }
+
+  async uploadStaffDocument(
+    staffId: string,
+    applicationId: string,
+    type: DocumentType,
+    file: Express.Multer.File,
+  ) {
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Application not found.');
+    }
+
+    let fileUrl: string;
+    try {
+      const uploadResult = await new Promise<UploadApiResponse>(
+        (resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: 'ronald_crm_vault', resource_type: 'auto' },
+            (error, result) => {
+              if (error) return reject(new Error(error.message));
+              if (!result)
+                return reject(new Error('Empty result from Cloudinary'));
+              resolve(result);
+            },
+          );
+          streamifier.createReadStream(file.buffer).pipe(uploadStream);
+        },
+      );
+      fileUrl = uploadResult.secure_url;
+    } catch (error) {
+      this.logger.error('Cloudinary Staff Vault Upload Failed', error);
+      throw new BadRequestException('Failed to process document upload.');
+    }
+
+    const existingDocument = await this.prisma.document.findFirst({
+      where: { applicationId, type },
+    });
+
+    let document;
+    if (existingDocument) {
+      document = await this.prisma.document.update({
+        where: { id: existingDocument.id },
+        data: {
+          fileUrl,
+          status: DocumentStatus.VERIFIED,
+          rejectionNote: null,
+          verifiedById: staffId,
+        },
+      });
+      this.logger.log(
+        `Staff ${staffId} replaced and verified ${type} document.`,
+      );
+    } else {
+      document = await this.prisma.document.create({
+        data: {
+          applicationId,
+          type,
+          fileUrl,
+          status: DocumentStatus.VERIFIED,
+          verifiedById: staffId,
+        },
+      });
+      this.logger.log(`Staff ${staffId} uploaded verified ${type} to vault.`);
+    }
+
+    if (application.stage === ApplicationStage.CONSULTATION_AND_DOCUMENTS) {
+      await this.prisma.application.update({
+        where: { id: application.id },
+        data: { stage: ApplicationStage.COMPLIANCE_REVIEW },
+      });
+    }
+
+    return document;
+  }
 }

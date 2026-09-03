@@ -94,4 +94,24 @@ export class VaultController {
     }
     return this.vaultService.rejectDocument(documentId, req.user.id, reason);
   }
+
+  @Post('staff-upload/:applicationId')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  @UseInterceptors(FileInterceptor('file'))
+  async staffUploadDocument(
+    @Param('applicationId') applicationId: string,
+    @Body('type') type: DocumentType,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: RequestWithUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided for upload.');
+    }
+    return this.vaultService.uploadStaffDocument(
+      req.user.id,
+      applicationId,
+      type,
+      file,
+    );
+  }
 }
