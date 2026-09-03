@@ -3,12 +3,17 @@ import {
   Get,
   Query,
   UseGuards,
-  BadRequestException,
+  Param,
+  Patch,
+  Body,
+  Post,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Role } from '@prisma/client';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { AuthGuard } from '@nestjs/passport';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { UpdateUserDetailsDto } from './dto/update-user-details.dto';
 
 @Controller('users')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -17,15 +22,37 @@ export class UsersController {
 
   @Get()
   @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR)
-  async getUsersByRole(@Query('role') role?: string) {
-    if (!role) {
-      throw new BadRequestException('Role query parameter is required');
-    }
+  async getUsers(@Query('role') role?: Role) {
+    return this.usersService.findAllUsers(role);
+  }
 
-    if (!Object.values(Role).includes(role as Role)) {
-      throw new BadRequestException('Invalid role specified');
-    }
+  @Get(':id')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR)
+  async getUserById(@Param('id') id: string) {
+    return this.usersService.getUserById(id);
+  }
 
-    return this.usersService.findByRole(role as Role);
+  @Patch(':id/status')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR)
+  async updateUserStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserStatusDto,
+  ) {
+    return this.usersService.updateUserStatus(id, dto);
+  }
+
+  @Patch(':id/details')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR)
+  async updateUserDetails(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDetailsDto,
+  ) {
+    return this.usersService.updateUserDetails(id, dto);
+  }
+
+  @Post(':id/clear-fingerprint')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR)
+  async clearFingerprints(@Param('id') id: string) {
+    return this.usersService.clearDeviceFingerprints(id);
   }
 }
