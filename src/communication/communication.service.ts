@@ -12,19 +12,7 @@ import { SaveCallLogDto, ScheduleMeetDto, SendEmailDto } from './dto';
 import { GoogleCalendarService } from './google-calendar/google-calendar.service';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import * as streamifier from 'streamifier';
-
-export class ResendInboundEmailData {
-  to!: string[];
-  from!: string;
-  subject!: string;
-  text?: string;
-  html?: string;
-}
-
-export class ResendInboundEmailPayload {
-  type!: string;
-  data?: ResendInboundEmailData;
-}
+import { ResendInboundEmailPayload } from './dto/resend-webhook.dto';
 
 @Injectable()
 export class CommunicationService {

@@ -14,11 +14,9 @@ import { memoryStorage } from 'multer';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { Role } from '@prisma/client';
-import {
-  CommunicationService,
-  ResendInboundEmailPayload,
-} from './communication.service';
+import { CommunicationService } from './communication.service';
 import { ScheduleMeetDto, SendEmailDto } from './dto';
+import { ResendInboundEmailPayload } from './dto/resend-webhook.dto';
 
 interface RequestWithUser extends Express.Request {
   user: {
