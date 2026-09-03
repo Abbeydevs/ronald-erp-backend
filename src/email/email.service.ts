@@ -277,4 +277,48 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendDirectStudentWelcomeEmail(
+    toEmail: string,
+    studentName: string,
+    counsellorName: string,
+  ): Promise<boolean> {
+    try {
+      const { data, error } = await this.resend.emails.send({
+        from: 'Ronald Partners Admissions <onboarding@ronaldpartners.com>',
+        to: toEmail,
+        subject: 'Welcome to Ronald Partners!',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #0fa3b1; margin-top: 0;">Welcome to Ronald Partners!</h2>
+            <p>Dear <strong>${studentName}</strong>,</p>
+            <p>We are thrilled to officially welcome you to Ronald Partners. Your university application profile has been successfully created.</p>
+            <p>Your dedicated Admissions Counsellor is <strong>${counsellorName}</strong>. They will be handling your application process directly and will be in touch with you regarding the next steps and required documents.</p>
+            <p>If you have any immediate questions, please feel free to reply directly to this email.</p>
+            <br/>
+            <p style="font-size: 14px; color: #64748b;">Best Regards,<br/>The Ronald Partners Team</p>
+          </div>
+        `,
+      });
+
+      if (error) {
+        this.logger.error(
+          `Resend Welcome Email Error: ${error.message}`,
+          error,
+        );
+        return false;
+      }
+
+      this.logger.log(
+        `Direct student welcome email sent to ${toEmail}. ID: ${data?.id}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to dispatch welcome email to ${toEmail}`,
+        error,
+      );
+      return false;
+    }
+  }
 }

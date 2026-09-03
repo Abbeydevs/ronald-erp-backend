@@ -303,4 +303,73 @@ export class ApplicationsService {
       data: proofs,
     };
   }
+
+  async getStaffMembers() {
+    return this.prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, role: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async createDirectApplication(
+    creatorId: string,
+    dto: {
+      firstName: string;
+      lastName: string;
+      email?: string;
+      phone?: string;
+      countryChoice?: string;
+      courseOfStudy?: string;
+      referredById?: string;
+    },
+  ) {
+    const creator = await this.prisma.user.findUnique({
+      where: { id: creatorId },
+    });
+
+    if (!creator) throw new BadRequestException('Creator not found.');
+
+    const lead = await this.prisma.lead.create({
+      data: {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        phone: dto.phone,
+        countryChoice: dto.countryChoice,
+        courseOfStudy: dto.courseOfStudy,
+        source: 'STAFF',
+        status: 'CONVERTED',
+        priority: 'WARM',
+        assignedToId: creatorId,
+        referredById: dto.referredById || null,
+      },
+    });
+
+    const application = await this.prisma.application.create({
+      data: {
+        leadId: lead.id,
+        stage: ApplicationStage.CONSULTATION_AND_DOCUMENTS,
+        counsellorId: creatorId,
+      },
+    });
+
+    await this.syncStageTasks(
+      application.id,
+      ApplicationStage.CONSULTATION_AND_DOCUMENTS,
+    );
+
+    if (lead.email) {
+      await this.emailService.sendDirectStudentWelcomeEmail(
+        lead.email,
+        lead.firstName,
+        creator.name,
+      );
+    }
+
+    this.logger.log(
+      `Staff ${creator.name} directly created student ${lead.firstName} ${lead.lastName}`,
+    );
+    return application;
+  }
 }

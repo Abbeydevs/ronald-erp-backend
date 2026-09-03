@@ -94,4 +94,24 @@ export class CommunicationController {
     await this.commService.handleInboundEmailWebhook(payload);
     return { success: true };
   }
+
+  @Post('send-document')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  async sendDocument(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('leadId') leadId: string,
+    @Body('subject') subject: string,
+    @Body('message') message: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.commService.sendDocumentToStudent(
+      leadId,
+      subject,
+      message,
+      file,
+      req.user.id,
+    );
+  }
 }

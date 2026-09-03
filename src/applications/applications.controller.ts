@@ -20,6 +20,7 @@ import * as express from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SubmitProofOfWorkDto } from './dto/submit-proof-of-work.dto';
 import { ToggleTaskDto } from './dto/toggle-task.dto';
+import { CreateDirectApplicationDto } from './dto/create-direct-application.dto';
 
 interface RequestWithUser extends express.Request {
   user: {
@@ -107,5 +108,20 @@ export class ApplicationsController {
   )
   getProofsOfWork(@Param('id') id: string) {
     return this.applicationsService.getProofsOfWork(id);
+  }
+
+  @Get('staff')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  getStaffMembers() {
+    return this.applicationsService.getStaffMembers();
+  }
+
+  @Post('direct')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  createDirectApplication(
+    @Body() dto: CreateDirectApplicationDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.applicationsService.createDirectApplication(req.user.id, dto);
   }
 }

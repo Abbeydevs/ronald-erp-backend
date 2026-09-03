@@ -178,7 +178,7 @@ export class CommunicationService {
       },
     });
 
-    const replyToAddress = `reply+${lead.id}.${log.id}@replies.ronaldpartners.com`;
+    const replyToAddress = `reply+${lead.id}@replies.ronaldpartners.com`;
 
     const dispatched = await this.emailService.sendStudentEmail(
       lead.email,
@@ -343,5 +343,95 @@ export class CommunicationService {
         this.logger.log(`Nudge email sent to lead ${lead.id} (${lead.email})`);
       }
     }
+  }
+
+  async sendDocumentToStudent(
+    leadId: string,
+    subject: string,
+    message: string,
+    file: Express.Multer.File,
+    counsellorId: string,
+  ) {
+    const lead = await this.prisma.lead.findUnique({
+      where: { id: leadId },
+    });
+
+    if (!lead || !lead.email) {
+      throw new BadRequestException(
+        'Lead not found or does not have a valid email address.',
+      );
+    }
+
+    if (!file) {
+      throw new BadRequestException('Document file is required.');
+    }
+
+    let fileUrl: string;
+    try {
+      const uploadResult = await new Promise<UploadApiResponse>(
+        (resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: 'ronald_crm_documents', resource_type: 'auto' },
+            (error, result) => {
+              if (error) return reject(new Error(error.message));
+              if (!result)
+                return reject(new Error('Empty result from Cloudinary'));
+              resolve(result);
+            },
+          );
+          streamifier.createReadStream(file.buffer).pipe(uploadStream);
+        },
+      );
+      fileUrl = uploadResult.secure_url;
+    } catch (error) {
+      this.logger.error('Cloudinary Document Upload Failed', error);
+      throw new BadRequestException('Failed to process document upload.');
+    }
+
+    const studentName = lead.firstName || 'Student';
+
+    const emailHtml = `
+      <p>Dear <strong>${studentName}</strong>,</p>
+      <p>${message.replace(/\n/g, '<br/>')}</p>
+      <div style="margin: 24px 0;">
+        <a href="${fileUrl}" target="_blank" style="display:inline-block; padding: 10px 20px; background-color: #0fa3b1; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold;">
+          View / Download Document
+        </a>
+      </div>
+      <p style="margin-top: 20px; font-size: 12px; color: #64748b;">If you have any questions, please reply directly to this email.</p>
+    `;
+
+    const logContent = `${message}\n\n<a href="${fileUrl}" target="_blank" style="color: #0fa3b1; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px; margin-top: 8px;">📎 Attached Document</a>`;
+
+    const log = await this.prisma.communicationLog.create({
+      data: {
+        leadId: lead.id,
+        counsellorId,
+        type: CommType.EMAIL,
+        subject: subject,
+        content: logContent,
+      },
+    });
+
+    const replyToAddress = `reply+${lead.id}@replies.ronaldpartners.com`;
+
+    const dispatched = await this.emailService.sendStudentEmail(
+      lead.email,
+      subject,
+      emailHtml,
+      replyToAddress,
+    );
+
+    if (!dispatched) {
+      await this.prisma.communicationLog.delete({ where: { id: log.id } });
+      throw new BadRequestException('Failed to dispatch document email.');
+    }
+
+    await this.prisma.lead.update({
+      where: { id: lead.id },
+      data: { lastCommunicatedAt: new Date() },
+    });
+
+    return log;
   }
 }
