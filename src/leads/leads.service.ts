@@ -261,4 +261,23 @@ export class LeadsService {
       data: { counsellorNotes: notes },
     });
   }
+
+  async getActiveStudents() {
+    return this.prisma.lead.findMany({
+      where: {
+        applications: {
+          some: {},
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        assignedTo: { select: { name: true } },
+        applications: {
+          select: { stage: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+  }
 }

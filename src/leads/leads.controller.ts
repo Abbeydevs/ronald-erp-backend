@@ -91,6 +91,13 @@ export class LeadsController {
     return this.leadsService.bulkAssign(bulkAssignDto);
   }
 
+  @Get('students')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  getActiveStudents() {
+    return this.leadsService.getActiveStudents();
+  }
+
   @Get(':id')
   @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
   async getLeadById(@Param('id') id: string) {
