@@ -19,6 +19,8 @@ import { VaultModule } from './vault/vault.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { SettingsModule } from './settings/settings.module';
+import { WebmailModule } from './webmail/webmail.module';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
     ApplicationsModule,
     RemindersModule,
     DashboardModule,
+    SettingsModule,
+    WebmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

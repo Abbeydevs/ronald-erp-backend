@@ -245,6 +245,22 @@ model Document {
   @@map("documents")
 }
 
+model EmailDraft {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  to          String
+  subject     String?
+  body        String? @db.Text
+  attachments Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("email_drafts")
+}
+
 model IdleAlert {
   id     String @id @default(uuid())
   userId String
@@ -357,6 +373,11 @@ model User {
   role     Role
   isActive Boolean @default(true)
 
+  isEmailConnected Boolean @default(false)
+  integratedEmail  String?
+  emailPassword    String?
+  emailSignature   String? @db.Text
+
   branchId   String?
   branch     Branch?     @relation(fields: [branchId], references: [id])
   workMode   WorkMode    @default(ONSITE)
@@ -374,6 +395,7 @@ model User {
   referredLeads      Lead[]              @relation("ReferredLeads")
   communicationLogs  CommunicationLog[]
   reminders          Reminder[]
+  emailDrafts        EmailDraft[]
 
   studentProfile          Lead?         @relation("StudentProfile")
   counsellingApplications Application[] @relation("ApplicationCounsellor")
