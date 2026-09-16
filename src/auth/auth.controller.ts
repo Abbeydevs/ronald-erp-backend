@@ -8,6 +8,8 @@ import * as express from 'express';
 import { RegisterStaffDto } from './dto/register-staff.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterStudentDto } from './dto/register-student.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 interface AuthenticatedRequest extends express.Request {
   user: {
@@ -65,5 +67,17 @@ export class AuthController {
       ipAddress,
       userAgent,
     );
+  }
+
+  @Post('request-password-reset')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR)
+  async requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
+    return this.authService.requestPasswordReset(dto);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 }

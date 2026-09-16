@@ -321,4 +321,48 @@ export class EmailService {
       return false;
     }
   }
+
+  async sendPasswordReset(email: string, resetUrl: string): Promise<boolean> {
+    try {
+      const { data, error } = await this.resend.emails.send({
+        from: 'Ronald Partners Security <onboarding@ronaldpartners.com>',
+        to: email,
+        subject: 'Password Reset Request - Ronald Partners Portal',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #0fa3b1; margin-top: 0;">Password Reset Request</h2>
+            <p>A password reset link has been generated for your account by an administrator or HR manager.</p>
+            <p>Please click the button below to set up a new password. This link is secure and will expire in 1 hour.</p>
+            <a href="${resetUrl}" style="display:inline-block; margin: 16px 0; padding: 12px 24px; background-color: #0fa3b1; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Reset Password
+            </a>
+            <p style="font-size: 13px; color: #64748b;">Or copy and paste this link into your browser: <br/><a href="${resetUrl}">${resetUrl}</a></p>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 24px;">If you did not expect a password reset, please notify your system administrator immediately.</p>
+          </div>
+        `,
+      });
+
+      if (error) {
+        this.logger.error(
+          `Resend Password Reset Error: ${error.message}`,
+          error,
+        );
+        return false;
+      }
+
+      if (data) {
+        this.logger.log(
+          `Password reset email dispatched to ${email}. ID: ${data.id}`,
+        );
+      }
+
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to dispatch password reset email to ${email}`,
+        error,
+      );
+      return false;
+    }
+  }
 }

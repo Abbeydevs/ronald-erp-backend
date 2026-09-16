@@ -13,6 +13,8 @@ import * as bcrypt from 'bcrypt';
 import { EmailService } from 'src/email/email.service';
 import { Role } from '@prisma/client';
 import { RegisterStudentDto } from './dto/register-student.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -240,5 +242,87 @@ export class AuthService {
     });
 
     return { message: 'Student account activated successfully.' };
+  }
+
+  async requestPasswordReset(dto: RequestPasswordResetDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      throw new BadRequestException(
+        'No account found with this email address.',
+      );
+    }
+
+    await this.prisma.passwordResetToken.deleteMany({
+      where: { email: dto.email, isUsed: false },
+    });
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    const resetTokenRecord = await this.prisma.passwordResetToken.create({
+      data: {
+        email: dto.email,
+        token: rawToken,
+        expiresAt,
+      },
+    });
+
+    const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    const resetUrl = `${frontendBaseUrl}/reset-password?token=${resetTokenRecord.token}`;
+
+    await this.emailService.sendPasswordReset(dto.email, resetUrl);
+
+    return {
+      message: 'Password reset link sent successfully.',
+      resetUrl,
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const resetTokenRecord = await this.prisma.passwordResetToken.findUnique({
+      where: { token: dto.token },
+    });
+
+    if (!resetTokenRecord) {
+      throw new BadRequestException('Invalid password reset token.');
+    }
+    if (resetTokenRecord.isUsed) {
+      throw new BadRequestException(
+        'This password reset link has already been used.',
+      );
+    }
+    if (resetTokenRecord.expiresAt < new Date()) {
+      throw new BadRequestException('This password reset link has expired.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { email: resetTokenRecord.email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Associated user no longer exists.');
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(dto.password, saltRounds);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { hash: hashedPassword },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetTokenRecord.id },
+        data: { isUsed: true },
+      }),
+    ]);
+
+    return {
+      message: 'Password has been successfully reset. You can now log in.',
+    };
   }
 }
