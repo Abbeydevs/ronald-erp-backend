@@ -1,0 +1,8 @@
+-- CreateEnum
+CREATE TYPE "ArchiveReason" AS ENUM ('FINANCIAL_CONSTRAINTS', 'GHOSTED_UNRESPONSIVE', 'VISA_DENIED', 'CHOSE_OTHER_AGENCY', 'POSTPONED_NEXT_YEAR', 'PERSONAL_REASONS', 'OTHER');
+
+-- AlterTable
+ALTER TABLE "leads" ADD COLUMN     "archiveNotes" TEXT,
+ADD COLUMN     "archiveReason" "ArchiveReason",
+ADD COLUMN     "archivedAt" TIMESTAMP(3),
+ADD COLUMN     "isArchived" BOOLEAN NOT NULL DEFAULT false;

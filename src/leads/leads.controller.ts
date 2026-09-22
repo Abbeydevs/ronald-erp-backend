@@ -16,6 +16,7 @@ import {
   CreateLeadDto,
   BulkAssignDto,
   FacebookWebhookPayload,
+  ArchiveLeadDto,
 } from './dto/create-lead.dto';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { Role } from '@prisma/client';
@@ -59,8 +60,9 @@ export class LeadsController {
   @Get()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
-  getAllLeads() {
-    return this.leadsService.getAllLeads();
+  getAllLeads(@Query('archived') archived?: string) {
+    const isArchived = archived === 'true';
+    return this.leadsService.getAllLeads(isArchived);
   }
 
   @Post('manual')
@@ -91,11 +93,26 @@ export class LeadsController {
     return this.leadsService.bulkAssign(bulkAssignDto);
   }
 
+  @Post(':id/archive')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  archiveLead(@Param('id') id: string, @Body() dto: ArchiveLeadDto) {
+    return this.leadsService.archiveLead(id, dto);
+  }
+
+  @Post(':id/unarchive')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
+  unarchiveLead(@Param('id') id: string) {
+    return this.leadsService.unarchiveLead(id);
+  }
+
   @Get('students')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
-  getActiveStudents() {
-    return this.leadsService.getActiveStudents();
+  getActiveStudents(@Query('archived') archived?: string) {
+    const isArchived = archived === 'true';
+    return this.leadsService.getActiveStudents(isArchived);
   }
 
   @Get(':id')

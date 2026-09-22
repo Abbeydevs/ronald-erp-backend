@@ -9,6 +9,7 @@ import {
   CreateLeadDto,
   BulkAssignDto,
   FacebookWebhookPayload,
+  ArchiveLeadDto,
 } from './dto/create-lead.dto';
 import { LeadStatus, LeadPriority, LeadSource } from '@prisma/client';
 
@@ -86,9 +87,39 @@ export class LeadsService {
     });
   }
 
-  async getAllLeads() {
+  async archiveLead(id: string, dto: ArchiveLeadDto) {
+    const lead = await this.prisma.lead.findUnique({ where: { id } });
+    if (!lead) throw new NotFoundException(`Lead/Student ${id} not found`);
+
+    return this.prisma.lead.update({
+      where: { id },
+      data: {
+        isArchived: true,
+        archiveReason: dto.reason,
+        archiveNotes: dto.notes,
+        archivedAt: new Date(),
+      },
+    });
+  }
+
+  async unarchiveLead(id: string) {
+    const lead = await this.prisma.lead.findUnique({ where: { id } });
+    if (!lead) throw new NotFoundException(`Lead/Student ${id} not found`);
+
+    return this.prisma.lead.update({
+      where: { id },
+      data: {
+        isArchived: false,
+        archiveReason: null,
+        archiveNotes: null,
+        archivedAt: null,
+      },
+    });
+  }
+
+  async getAllLeads(isArchived: boolean = false) {
     return this.prisma.lead.findMany({
-      where: { studentId: null },
+      where: { studentId: null, isArchived },
       orderBy: { createdAt: 'desc' },
       include: {
         assignedTo: { select: { name: true } },
@@ -97,9 +128,9 @@ export class LeadsService {
     });
   }
 
-  async getUnassignedPool() {
+  async getUnassignedPool(isArchived: boolean = false) {
     return this.prisma.lead.findMany({
-      where: { status: LeadStatus.UNASSIGNED, studentId: null },
+      where: { status: LeadStatus.UNASSIGNED, studentId: null, isArchived },
       orderBy: { createdAt: 'desc' },
       include: {
         referredBy: { select: { name: true } },
@@ -107,9 +138,9 @@ export class LeadsService {
     });
   }
 
-  async getMyLeads(userId: string) {
+  async getMyLeads(userId: string, isArchived: boolean = false) {
     return this.prisma.lead.findMany({
-      where: { assignedToId: userId, studentId: null },
+      where: { assignedToId: userId, studentId: null, isArchived },
       orderBy: { createdAt: 'desc' },
       include: {
         referredBy: { select: { name: true } },
@@ -262,12 +293,13 @@ export class LeadsService {
     });
   }
 
-  async getActiveStudents() {
+  async getActiveStudents(isArchived: boolean = false) {
     return this.prisma.lead.findMany({
       where: {
         applications: {
           some: {},
         },
+        isArchived,
       },
       orderBy: { updatedAt: 'desc' },
       include: {

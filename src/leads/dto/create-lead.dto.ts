@@ -5,7 +5,7 @@ import {
   IsEnum,
   IsArray,
 } from 'class-validator';
-import { LeadSource } from '@prisma/client';
+import { ArchiveReason, LeadSource } from '@prisma/client';
 
 export class CreateLeadDto {
   @IsString()
@@ -75,4 +75,13 @@ export class FacebookWebhookEntry {
 export class FacebookWebhookPayload {
   object?: string;
   entry?: FacebookWebhookEntry[];
+}
+
+export class ArchiveLeadDto {
+  @IsEnum(ArchiveReason)
+  reason!: ArchiveReason;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

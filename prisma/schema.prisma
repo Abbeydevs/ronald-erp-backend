@@ -19,6 +19,16 @@ enum ApplicationStage {
   VISA_DECISION_PENDING
 }
 
+enum ArchiveReason {
+  FINANCIAL_CONSTRAINTS
+  GHOSTED_UNRESPONSIVE
+  VISA_DENIED
+  CHOSE_OTHER_AGENCY
+  POSTPONED_NEXT_YEAR
+  PERSONAL_REASONS
+  OTHER
+}
+
 enum CommType {
   CALL
   EMAIL
@@ -318,6 +328,11 @@ model Lead {
   courseOfStudy    String?
   finalInstitution String?
   counsellorNotes  String? @db.Text
+
+  isArchived    Boolean        @default(false)
+  archiveReason ArchiveReason?
+  archiveNotes  String?        @db.Text
+  archivedAt    DateTime?
 
   source   LeadSource   @default(MANUAL)
   status   LeadStatus   @default(UNASSIGNED)
