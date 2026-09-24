@@ -161,4 +161,21 @@ export class LeadsController {
 
     return this.leadsService.create(createLeadDto);
   }
+
+  @Post('direct-apply')
+  async handleDirectApplicationWebhook(
+    @Headers('x-api-key') apiKey: string,
+    @Body() createLeadDto: CreateLeadDto,
+  ) {
+    const validKey =
+      process.env.LANDING_PAGE_API_KEY || 'ronald_partners_secret_2024';
+
+    if (apiKey !== validKey) {
+      throw new UnauthorizedException('Invalid or missing API Key');
+    }
+
+    createLeadDto.source = LeadSource.DIRECT_APPLICATION;
+
+    return this.leadsService.create(createLeadDto);
+  }
 }

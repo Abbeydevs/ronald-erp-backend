@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsEnum,
   IsArray,
+  IsInt,
 } from 'class-validator';
 import { ArchiveReason, LeadSource } from '@prisma/client';
 
@@ -45,6 +46,22 @@ export class CreateLeadDto {
   @IsString()
   @IsOptional()
   sponsorType?: string;
+
+  @IsOptional()
+  @IsString()
+  highestQualification?: string;
+
+  @IsOptional()
+  @IsInt()
+  age?: number;
+
+  @IsOptional()
+  @IsString()
+  preferredContact?: string;
+
+  @IsOptional()
+  @IsString()
+  additionalComments?: string;
 
   @IsEnum(LeadSource)
   @IsOptional()

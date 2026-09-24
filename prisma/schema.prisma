@@ -81,6 +81,7 @@ enum LeadSource {
   MANUAL
   STAFF
   REFERRAL
+  DIRECT_APPLICATION
 }
 
 enum LeadStatus {
@@ -328,6 +329,11 @@ model Lead {
   courseOfStudy    String?
   finalInstitution String?
   counsellorNotes  String? @db.Text
+
+  highestQualification String?
+  age                  Int?
+  preferredContact     String?
+  additionalComments   String? @db.Text
 
   isArchived    Boolean        @default(false)
   archiveReason ArchiveReason?
