@@ -25,7 +25,7 @@ async function bootstrap(): Promise<void> {
     },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Authorization',
+    allowedHeaders: 'Content-Type, Accept, Authorization, x-api-key',
   });
 
   app.useGlobalPipes(
