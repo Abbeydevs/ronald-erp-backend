@@ -334,6 +334,10 @@ model Lead {
   archiveNotes  String?        @db.Text
   archivedAt    DateTime?
 
+  programType String?
+  intake      String?
+  sponsorType String?
+
   source   LeadSource   @default(MANUAL)
   status   LeadStatus   @default(UNASSIGNED)
   priority LeadPriority @default(WARM)

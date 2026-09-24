@@ -8,6 +8,8 @@ import {
   UseGuards,
   Query,
   Res,
+  Headers,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
@@ -19,7 +21,7 @@ import {
   ArchiveLeadDto,
 } from './dto/create-lead.dto';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
-import { Role } from '@prisma/client';
+import { LeadSource, Role } from '@prisma/client';
 
 @Controller('leads')
 export class LeadsController {
@@ -141,5 +143,22 @@ export class LeadsController {
   // @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR, Role.ADMISSIONS_COUNSELLOR)
   updateNotes(@Param('id') id: string, @Body() body: { notes: string }) {
     return this.leadsService.updateCounsellorNotes(id, body.notes);
+  }
+
+  @Post('landing-page')
+  async handleLandingPageWebhook(
+    @Headers('x-api-key') apiKey: string,
+    @Body() createLeadDto: CreateLeadDto,
+  ) {
+    const validKey =
+      process.env.LANDING_PAGE_API_KEY || 'ronald_partners_secret_2024';
+
+    if (apiKey !== validKey) {
+      throw new UnauthorizedException('Invalid or missing API Key');
+    }
+
+    createLeadDto.source = LeadSource.WEBSITE;
+
+    return this.leadsService.create(createLeadDto);
   }
 }

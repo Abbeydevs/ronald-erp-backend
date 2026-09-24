@@ -34,6 +34,18 @@ export class CreateLeadDto {
   @IsOptional()
   courseOfStudy?: string;
 
+  @IsString()
+  @IsOptional()
+  programType?: string;
+
+  @IsString()
+  @IsOptional()
+  intake?: string;
+
+  @IsString()
+  @IsOptional()
+  sponsorType?: string;
+
   @IsEnum(LeadSource)
   @IsOptional()
   source?: LeadSource;
