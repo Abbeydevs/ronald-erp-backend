@@ -299,7 +299,7 @@ export class LeadsService {
         applications: {
           some: {},
         },
-        isArchived,
+        isArchived: isArchived ? true : { not: true },
       },
       orderBy: { updatedAt: 'desc' },
       include: {
