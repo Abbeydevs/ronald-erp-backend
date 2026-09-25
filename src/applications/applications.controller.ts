@@ -124,4 +124,18 @@ export class ApplicationsController {
   ) {
     return this.applicationsService.createDirectApplication(req.user.id, dto);
   }
+
+  @Patch(':id/assign')
+  @Roles(Role.SUPER_ADMIN, Role.COMPLIANCE_HR)
+  assignApplication(
+    @Param('id') id: string,
+    @Body('counsellorId') counsellorId: string,
+  ) {
+    if (!counsellorId) {
+      throw new BadRequestException(
+        'Counsellor ID is required for assignment.',
+      );
+    }
+    return this.applicationsService.assignApplication(id, counsellorId);
+  }
 }

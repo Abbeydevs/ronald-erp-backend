@@ -21,6 +21,9 @@ import { RemindersModule } from './reminders/reminders.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SettingsModule } from './settings/settings.module';
 import { WebmailModule } from './webmail/webmail.module';
+import { InstitutionsModule } from './institutions/institutions.module';
+import { AgentModule } from './agent/agent.module';
+import { CommissionsModule } from './commissions/commissions.module';
 
 @Module({
   imports: [
@@ -46,6 +49,9 @@ import { WebmailModule } from './webmail/webmail.module';
     DashboardModule,
     SettingsModule,
     WebmailModule,
+    InstitutionsModule,
+    AgentModule,
+    CommissionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

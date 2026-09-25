@@ -29,6 +29,13 @@ enum ArchiveReason {
   OTHER
 }
 
+enum CommissionStatus {
+  PENDING_ADMIN_CONFIG
+  CALCULATED
+  APPROVED
+  PAID
+}
+
 enum CommType {
   CALL
   EMAIL
@@ -108,10 +115,37 @@ enum Role {
   STUDENT
 }
 
+enum SchoolApplicationStatus {
+  PENDING
+  CONDITIONAL_OFFER
+  UNCONDITIONAL_OFFER
+  REJECTED
+  WITHDRAWN
+  ENROLLED_FINAL
+}
+
 enum WorkMode {
   ONSITE
   REMOTE
   HYBRID
+}
+
+model AgentProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyName String?
+
+  bankName      String?
+  accountName   String?
+  accountNumber String?
+  swiftCode     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("agent_profiles")
 }
 
 model Application {
@@ -297,6 +331,23 @@ model IdleAlert {
   @@map("idle_alerts")
 }
 
+model Institution {
+  id      String @id @default(uuid())
+  name    String @unique
+  country String
+
+  schoolCommissionAmount    Float?
+  agentCommissionPercentage Float?
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  targetSchools TargetSchool[]
+
+  @@map("institutions")
+}
+
 model Invitation {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -363,6 +414,7 @@ model Lead {
   lastCommunicatedAt DateTime? @default(now())
 
   communicationLogs CommunicationLog[]
+  targetSchools     TargetSchool[]
 
   @@map("leads")
 }
@@ -416,6 +468,29 @@ model Reminder {
   @@map("reminders")
 }
 
+model TargetSchool {
+  id     String @id @default(uuid())
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+
+  customInstitutionName String?
+
+  status SchoolApplicationStatus @default(PENDING)
+
+  tuitionFeeAmount      Float?
+  rpCommissionAmount    Float?
+  agentCommissionAmount Float?
+  commissionStatus      CommissionStatus @default(PENDING_ADMIN_CONFIG)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("target_schools")
+}
+
 model User {
   id       String  @id @default(uuid())
   name     String
@@ -454,6 +529,7 @@ model User {
   visaApplications        Application[] @relation("ApplicationVisa")
   verifiedDocuments       Document[]    @relation("DocumentVerifier")
   proofsOfWork            ProofOfWork[]
+  agentProfile            AgentProfile?
 
   @@map("users")
 }

@@ -372,4 +372,37 @@ export class ApplicationsService {
     );
     return application;
   }
+
+  async assignApplication(applicationId: string, counsellorId: string) {
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException(`Application ${applicationId} not found.`);
+    }
+
+    const updatedApplication = await this.prisma.$transaction(
+      async (prisma) => {
+        const updatedApp = await prisma.application.update({
+          where: { id: applicationId },
+          data: { counsellorId },
+        });
+
+        if (updatedApp.leadId) {
+          await prisma.lead.update({
+            where: { id: updatedApp.leadId },
+            data: { assignedToId: counsellorId },
+          });
+        }
+
+        return updatedApp;
+      },
+    );
+
+    this.logger.log(
+      `Application ${applicationId} assigned to Counsellor ${counsellorId}`,
+    );
+    return updatedApplication;
+  }
 }

@@ -305,7 +305,7 @@ export class LeadsService {
       include: {
         assignedTo: { select: { name: true } },
         applications: {
-          select: { stage: true },
+          select: { id: true, stage: true },
           orderBy: { createdAt: 'desc' },
           take: 1,
         },

@@ -43,7 +43,7 @@ export class VaultController {
   }
 
   @Post('upload/:applicationId')
-  @Roles(Role.STUDENT)
+  @Roles(Role.STUDENT, Role.SUB_AGENT)
   @UseInterceptors(FileInterceptor('file'))
   async uploadDocument(
     @Param('applicationId') applicationId: string,
