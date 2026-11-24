@@ -1,6 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
 
+export interface CampaignBatchItem {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+  unsubscribeUrl: string;
+}
+
+export interface CampaignBatchResult {
+  success: boolean;
+  emailIds: string[];
+  errorMessage?: string;
+}
+
 @Injectable()
 export class EmailService {
   private readonly resend: Resend;
@@ -8,6 +22,13 @@ export class EmailService {
 
   constructor() {
     this.resend = new Resend(process.env.RESEND_API_KEY || '');
+  }
+
+  private getCampaignFromAddress(): string {
+    return (
+      process.env.CAMPAIGN_FROM_EMAIL ||
+      'Ronald Partners <campaigns@thesoftwarehub.tech>'
+    );
   }
 
   async sendStaffInvite(
@@ -363,6 +384,79 @@ export class EmailService {
         error,
       );
       return false;
+    }
+  }
+
+  async sendCampaignTestEmail(
+    toEmail: string,
+    subject: string,
+    bodyHtml: string,
+    replyTo?: string,
+  ): Promise<boolean> {
+    try {
+      const { data, error } = await this.resend.emails.send({
+        from: this.getCampaignFromAddress(),
+        to: toEmail,
+        replyTo,
+        subject: `[TEST] ${subject}`,
+        html: bodyHtml,
+      });
+
+      if (error) {
+        this.logger.error(
+          `Resend Campaign Test Error: ${error.message}`,
+          error,
+        );
+        return false;
+      }
+
+      this.logger.log(
+        `Campaign test email sent to ${toEmail}. ID: ${data?.id}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to dispatch campaign test email to ${toEmail}`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  async sendCampaignBatch(
+    items: CampaignBatchItem[],
+  ): Promise<CampaignBatchResult> {
+    try {
+      const from = this.getCampaignFromAddress();
+
+      const payload = items.map((item) => ({
+        from,
+        to: item.to,
+        subject: item.subject,
+        html: item.html,
+        ...(item.replyTo ? { replyTo: item.replyTo } : {}),
+        headers: {
+          'List-Unsubscribe': `<${item.unsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+      }));
+
+      const { data, error } = await this.resend.batch.send(payload);
+
+      if (error) {
+        this.logger.error(`Resend Batch API Error: ${error.message}`, error);
+        return { success: false, emailIds: [], errorMessage: error.message };
+      }
+
+      const emailIds = data?.data ? data.data.map((entry) => entry.id) : [];
+      this.logger.log(`Resend batch dispatched: ${emailIds.length} emails`);
+
+      return { success: true, emailIds };
+    } catch (error) {
+      const msg =
+        error instanceof Error ? error.message : 'Unknown batch error';
+      this.logger.error(`Failed to send campaign batch: ${msg}`, error);
+      return { success: false, emailIds: [], errorMessage: msg };
     }
   }
 }

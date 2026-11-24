@@ -24,6 +24,7 @@ import { WebmailModule } from './webmail/webmail.module';
 import { InstitutionsModule } from './institutions/institutions.module';
 import { AgentModule } from './agent/agent.module';
 import { CommissionsModule } from './commissions/commissions.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { CommissionsModule } from './commissions/commissions.module';
     InstitutionsModule,
     AgentModule,
     CommissionsModule,
+    CampaignsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

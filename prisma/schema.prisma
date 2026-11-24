@@ -29,6 +29,31 @@ enum ArchiveReason {
   OTHER
 }
 
+enum AudienceContactSource {
+  LEAD
+  STUDENT
+  MANUAL
+  CSV_IMPORT
+}
+
+enum CampaignRecipientStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+}
+
 enum CommissionStatus {
   PENDING_ADMIN_CONFIG
   CALCULATED
@@ -212,6 +237,24 @@ model Attendance {
   @@map("attendances")
 }
 
+model AudienceContact {
+  id         String        @id @default(uuid())
+  audienceId String
+  audience   EmailAudience @relation(fields: [audienceId], references: [id], onDelete: Cascade)
+
+  email     String
+  firstName String?
+  lastName  String?
+  source    AudienceContactSource @default(MANUAL)
+  leadId    String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([audienceId, email])
+  @@index([email])
+  @@map("audience_contacts")
+}
+
 model Branch {
   id           String @id @default(uuid())
   name         String
@@ -228,6 +271,27 @@ model Branch {
   attendances Attendance[]
 
   @@map("branches")
+}
+
+model CampaignRecipient {
+  id         String        @id @default(uuid())
+  campaignId String
+  campaign   EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  email         String
+  firstName     String?
+  resendEmailId String?                 @unique
+  status        CampaignRecipientStatus @default(PENDING)
+
+  openedAt  DateTime?
+  clickedAt DateTime?
+  bouncedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([campaignId])
+  @@map("campaign_recipients")
 }
 
 model CommunicationLog {
@@ -301,6 +365,55 @@ model Document {
   updatedAt DateTime @updatedAt
 
   @@map("documents")
+}
+
+model EmailAudience {
+  id          String  @id @default(uuid())
+  name        String
+  description String? @db.Text
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  contacts  AudienceContact[]
+  campaigns EmailCampaign[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("email_audiences")
+}
+
+model EmailCampaign {
+  id       String  @id @default(uuid())
+  name     String
+  subject  String
+  bodyHtml String  @db.Text
+  replyTo  String?
+
+  status      CampaignStatus @default(DRAFT)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+
+  audienceId String
+  audience   EmailAudience @relation(fields: [audienceId], references: [id])
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  totalRecipients Int @default(0)
+  sentCount       Int @default(0)
+  deliveredCount  Int @default(0)
+  openedCount     Int @default(0)
+  clickedCount    Int @default(0)
+  bouncedCount    Int @default(0)
+
+  recipients CampaignRecipient[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("email_campaigns")
 }
 
 model EmailDraft {
@@ -491,6 +604,15 @@ model TargetSchool {
   @@map("target_schools")
 }
 
+model UnsubscribedEmail {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  reason         String?
+  unsubscribedAt DateTime @default(now())
+
+  @@map("unsubscribed_emails")
+}
+
 model User {
   id       String  @id @default(uuid())
   name     String
@@ -523,13 +645,15 @@ model User {
   reminders          Reminder[]
   emailDrafts        EmailDraft[]
 
-  studentProfile          Lead?         @relation("StudentProfile")
-  counsellingApplications Application[] @relation("ApplicationCounsellor")
-  financeApplications     Application[] @relation("ApplicationFinance")
-  visaApplications        Application[] @relation("ApplicationVisa")
-  verifiedDocuments       Document[]    @relation("DocumentVerifier")
+  studentProfile          Lead?           @relation("StudentProfile")
+  counsellingApplications Application[]   @relation("ApplicationCounsellor")
+  financeApplications     Application[]   @relation("ApplicationFinance")
+  visaApplications        Application[]   @relation("ApplicationVisa")
+  verifiedDocuments       Document[]      @relation("DocumentVerifier")
   proofsOfWork            ProofOfWork[]
   agentProfile            AgentProfile?
+  createdAudiences        EmailAudience[]
+  createdCampaigns        EmailCampaign[]
 
   @@map("users")
 }
